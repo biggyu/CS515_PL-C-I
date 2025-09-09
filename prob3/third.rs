@@ -2,7 +2,6 @@ use std::env;
 use std::fs;
 use std::io;
 use std::collections::VecDeque;
-use std::collections::HashMap;
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct Node {
@@ -51,20 +50,13 @@ fn main() -> io::Result<()> {
         let tmp_query: String = query.to_string();
         let mut traverse_q: VecDeque<Node> = VecDeque::new();
         let mut traversed: Vec<Node> = vec![];
-        // for node in &nodes {
-        //     traversed.insert(node[0].name.clone(), 0);
-        // }
         traverse_q.push_back( Node { name: tmp_query.clone() });
-        // println!("{:?}",traversed.get(&tmp_query.clone()).unwrap());
-        // let to_traverse = traverse_q.pop_front().unwrap();
-        // println!("{:?}", to_traverse);
+        
         while traverse_q.len() > 0 {
             let to_traverse = traverse_q.pop_front().unwrap();
             for node in &mut nodes {
-                // if node[0].name == to_traverse.name && !traversed.get(&to_traverse.name.clone()).unwrap() {
                 if node[0].name == to_traverse.name && !traversed.iter().any(|node| node.name == to_traverse.name.clone()) {
                     traversed.push(Node { name: to_traverse.name.clone() });
-                    // traversed.entry(node[0].name.clone()).and_modify(|value| *value = true);
                     let to_traverse: &mut [Node] = &mut node[1..];
                     to_traverse.sort();
                     for n in to_traverse {
