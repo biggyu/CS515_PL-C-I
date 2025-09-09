@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct Node {
     name: String,
 }
@@ -10,6 +10,7 @@ struct Node {
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let graph_file = &args[1];
+    let query_file = &args[2];
 
     let contents = fs::read_to_string(graph_file)?;
     let line: Vec<_> = contents.split("\n").collect();
@@ -41,7 +42,35 @@ fn main() -> io::Result<()> {
     // for node in nodes {
     //     println!("{:?}", node);
     // }
-    println!("connected nodes: {:?}", nodes);
+    // println!("connected nodes: {:?}", nodes);
+
+    let contents = fs::read_to_string(query_file)?;
+    let queries: Vec<_> = contents.split("\n").collect();
+    for query in queries {
+        let tmp_query: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+        let (a, b) = (&tmp_query[0], &tmp_query[1]);
+        if a == "d" {
+            for node in &nodes {
+                if node[0].name == *b {
+                    println!("{}", node.len() - 1);
+                }
+            }
+        }
+        else if a == "a" {
+            for node in &mut nodes {
+                if node[0].name == *b {
+                    let adj: &mut [Node] = &mut node[1..];
+                    adj.sort();
+                    // println!("{:?}", adj);
+                    for n in adj {
+                        print!("{} ", n.name);
+                    }
+                    println!();
+                }
+            }
+        }
+    }
+
 
     Ok(())
 }
