@@ -39,28 +39,38 @@ fn main() {
         // }
         // let topo_node = topological_sort(&graph);
         // let mut traversed = HashSet::new();
+        let mut state: HashMap<String, i32> = graph.keys().map(|k| (k.clone(), 0)).collect();
         let mut node_order: Vec<String> = Vec::new();
         // println!("{:?}", graph[source]);
         // println!("{:?}", print_type(&graph[source]));
         // for node in graph.keys() {
         //     dfs(&node, &graph, &mut node_order);
         // }
-        dfs(&source, &graph, &mut node_order);
-        for node in graph.keys() {
-            if !node_order.contains(&node) {
-                dfs(&node, &graph, &mut node_order);
+        let mut is_cycle: bool = false;
+        if state[&source] == 0 {
+            if !dfs(&source, &graph, &mut node_order, &mut state) {
+                is_cycle = true;
             }
         }
-        let path = shortest_path_dag(&graph, &mut node_order, &source);
-        // for (node, dist) in path {
-        //     println!("{} {}", node, if dist == i32::MAX { "INF" } else { &dist.to_string() });
-        // }
-        let mut sorted_node: Vec<_> = path.keys().map(|s| s.to_string()).collect();
-        sorted_node.sort();
-        for node in sorted_node {
-            println!("{} {}", node, if path[&node] == i32::MAX { "INF" } else { &path[&node].to_string() });
+        for node in graph.keys() {
+            if !node_order.contains(&node) && state[&node.clone()]  == 0 {
+                if !dfs(&node, &graph, &mut node_order, &mut state) {
+                    is_cycle = true;
+                }
+            }
         }
-        println!();
+        if is_cycle {
+            println!("CYCLE");
+        }
+        else {
+            let path = shortest_path_dag(&graph, &mut node_order, &source);
+            let mut sorted_node: Vec<_> = path.keys().map(|s| s.to_string()).collect();
+            sorted_node.sort();
+            for node in sorted_node {
+                println!("{} {}", node, if path[&node] == i32::MAX { "INF" } else { &path[&node].to_string() });
+            }
+            println!();
+        }
     }
 }
 fn topological_sort(adj: &Vec<(String, i32)>) -> Vec<(String, i32)> {
@@ -68,17 +78,25 @@ fn topological_sort(adj: &Vec<(String, i32)>) -> Vec<(String, i32)> {
     tmp.sort_by(|a, b| a.0.cmp(&b.0));
     tmp
 }
-// fn dfs(source: &String, graph: &HashMap<String, Vec<(String, i32)>>, traversed: &mut HashSet<String>, order: &mut Vec<String>) {
-fn dfs(source: &String, graph: &HashMap<String, Vec<(String, i32)>>, order: &mut Vec<String>) {
-    // traversed.insert(source.clone());
+
+fn dfs(source: &String, graph: &HashMap<String, Vec<(String, i32)>>, order: &mut Vec<String>, state: &mut HashMap<String, i32>) -> bool {
+    state.insert(source.clone(), 1);
     order.push(source.clone());
     for node in topological_sort(&graph[source]) {
-        // println!("{:?}", node.0);
-        let nxt = node.0.clone();
-        if !order.contains(&nxt) {
-            dfs(&nxt, graph, order);
+        match state[&node.0] {
+            0 => {
+                if !dfs(&node.0.clone(), graph, order, state) {
+                    return false;
+                }
+            }
+            1 => {
+                return false;
+            }
+            _ => {}
         }
     }
+    state.insert(source.clone(), 2);
+    true
 }
 fn shortest_path_dag(graph: &HashMap<String, Vec<(String, i32)>>, order: &mut Vec<String>, source: &String) -> HashMap<String, i32> {
     let mut dist: HashMap<String, i32> = graph.keys().map(|k| (k.clone(), i32::MAX)).collect();
