@@ -1,78 +1,56 @@
 use std::env;
 use std::fs;
-use std::io;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct Node {
-    name: String,
-}
-
-fn main() -> io::Result<()> {
+fn main() {
     let args: Vec<String> = env::args().collect();
     let graph_file = &args[1];
     let query_file = &args[2];
 
-    let contents = fs::read_to_string(graph_file)?;
-    let line: Vec<_> = contents.split("\n").collect();
-    let mut nodes: Vec<Vec<Node>> = vec![];
-    let node_num: usize = line[0].parse::<usize>().unwrap();
-    // println!("Node num: {}", node_num);
-    // let nodes_vec = &line[1..=node_num];
-    for node in &line[1..=node_num] {
-        let tmp_node = Node { name: node.to_string() };
-        nodes.push(vec![tmp_node]);
-    }
-    // println!("Nodes: {:?}", nodes);
-    // let vertices = &line[node_num+1..];
-    for vertex in &line[node_num+1..] {
-        let tmp_nodes: Vec<String> = vertex.split_whitespace().map(|s| s.to_string()).collect();
-        let (a, b) = (&tmp_nodes[0], &tmp_nodes[1]);
-        for node in &mut nodes {
-            if node[0].name == *a {
-                node.push(Node { name: b.clone()});
-            }
-            else if node[0].name == *b {
-                node.push(Node { name: a.clone()});
-                break;
-            }
-        }
-    }
-    // println!("Connected nodes: ");
-    // for node in nodes {
-    //     println!("{:?}", node);
-    // }
-    // // println!("connected nodes: {:?}", nodes);
+    let contents = fs::read_to_string(graph_file).expect("Cannot read file");
+    let mut lines = contents.lines();
+    let node_num: usize = lines.next().unwrap().parse().unwrap();
 
-    let contents = fs::read_to_string(query_file)?;
-    let queries: Vec<_> = contents.split("\n").collect();
-    for query in queries {
-        let tmp_query: String = query.to_string();
-        let mut traverse_q: VecDeque<Node> = VecDeque::new();
-        let mut traversed: Vec<Node> = vec![];
-        traverse_q.push_back( Node { name: tmp_query.clone() });
-        
-        while traverse_q.len() > 0 {
-            let to_traverse = traverse_q.pop_front().unwrap();
-            for node in &mut nodes {
-                if node[0].name == to_traverse.name && !traversed.iter().any(|node| node.name == to_traverse.name.clone()) {
-                    traversed.push(Node { name: to_traverse.name.clone() });
-                    let to_traverse: &mut [Node] = &mut node[1..];
-                    to_traverse.sort();
-                    for n in to_traverse {
-                        if !traversed.iter().any(|node| node.name == n.name.clone()) {
-                            traverse_q.push_back(Node { name: n.name.clone() });
-                        }
-                    }
-                }
-            }
-        }
-        for n in traversed {
-            print!("{} ", n.name);
+    let mut nodes: Vec<_> = lines.by_ref().take(node_num).collect();
+    
+    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
+    for node in nodes {
+        graph.insert(node.to_string().clone(), Vec::new());
+    }
+    for line in lines {
+        let tmp: Vec<_> = line.split_whitespace().collect();
+        graph.get_mut(&tmp[0].to_string()).unwrap().push(tmp[1].to_string());
+        graph.get_mut(&tmp[1].to_string()).unwrap().push(tmp[0].to_string());
+    }
+    println!("{:?}", graph);
+    let query = fs::read_to_string(query_file).expect("Cannot read file");
+    for source in query.lines() {
+        let source = source.to_string();
+        let mut node_order: Vec<String> = Vec::new();
+        bfs(&source, &graph, &mut node_order);
+
+        for node in node_order {
+            print!("{} ", node);
         }
         println!();
     }
+}
+fn topological_sort(adj: &Vec<String>) -> Vec<String> {
+    let mut tmp = adj.clone();
+    tmp.sort_by(|a, b| a.cmp(&b));
+    tmp
+}
+fn bfs(source: &String, graph: &HashMap<String, Vec<String>>, order: &mut Vec<String>) {
+    let mut traverse_q = VecDeque::new(); 
 
-
-    Ok(())
+    traverse_q.push_back(source.clone());
+    while let Some(node) = traverse_q.pop_front() {
+        order.push(node.clone());
+        for n in topological_sort(&graph[&node]) {
+            let nxt = n.clone();
+            if !order.contains(&nxt) && !traverse_q.contains(&nxt) {
+                traverse_q.push_back(nxt);
+            }
+        }
+    }
 }
