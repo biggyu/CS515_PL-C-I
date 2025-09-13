@@ -1,92 +1,75 @@
 use std::env;
 use std::fs;
-use std::io;
+use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-struct Node {
-    name: String,
-    weight: i32,
-}
+// #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+// struct Node {
+//     name: String,
+//     weight: i32,
+// }
 
-fn main() -> io::Result<()> {
+fn main() {
     let args: Vec<String> = env::args().collect();
     let graph_file = &args[1];
 
-    let contents = fs::read_to_string(graph_file)?;
-    let line: Vec<_> = contents.split("\n").collect();
-    let mut nodes: Vec<Vec<Node>> = vec![];
-    let node_num: usize = line[0].parse::<usize>().unwrap();
-    // println!("Node num: {}", node_num);
-    // let nodes_vec = &line[1..=node_num];
-    for node in &line[1..=node_num] {
-        let tmp_node = Node { name: node.to_string(), weight: 0i32 };
-        nodes.push(vec![tmp_node]);
+    let contents = fs::read_to_string(graph_file).expect("Cannot read file");;
+    let mut lines = contents.lines();
+    let node_num: usize = lines.next().unwrap().parse().unwrap();
+
+    let mut nodes: Vec<_> = lines.by_ref().take(node_num).collect();
+    // println!("{:?}", nodes);
+    // println!("{:?}", lines.next().unwrap());
+    let mut graph: HashMap<String, Vec<(String, i32)>> = HashMap::new();
+    for node in nodes {
+        graph.insert(node.to_string().clone(), Vec::new());
     }
-    // println!("Nodes: {:?}", nodes);
-    // let vertices = &line[node_num+1..];
-    for vertex in &line[node_num+1..] {
-        let tmp_nodes: Vec<String> = vertex.split_whitespace().map(|s| s.to_string()).collect();
-        let (a, b, c) = (&tmp_nodes[0], &tmp_nodes[1], &tmp_nodes[2]);
-        for node in &mut nodes {
-            if node[0].name == *a {
-                match c.parse::<i32>() {
-                    Ok(number) => node.push(Node { name: b.clone(), weight: number }),
-                    Err(e) => println!("Error passing vertex weight"),
-                }
-                // node.push(Node { name: b.clone(), weight: c });
-            }
-        }
+    for line in lines {
+        let tmp: Vec<_> = line.split_whitespace().collect();
+        graph.get_mut(&tmp[0].to_string()).unwrap().push((tmp[1].to_string(), tmp[2].parse().unwrap()));
+        // graph[tmp[0]].push((tmp[1].to_string(), tmp[2].parse().unwrap()));
     }
-    nodes.sort();
-    // println!("Connected nodes: ");
-    // for node in &nodes {
-    //     println!("{:?}", node);
+    // println!("{:?}", graph);
+
+    let source = "A".to_string();
+    // for node in graph.values() {
+    //     println!("{:?}", topological_sort(node));
     // }
-    let mut traversed: Vec<Node> = vec![];
-    // for node in &mut nodes {
-    for i in 0..nodes.len() {
-        if !traversed.iter().any(|n| n.name == nodes[i][0].name.clone()) {
-            let mut to_traverse: Vec<Node> = vec![ Node { name: nodes[i][0].name.clone(), weight: nodes[i][0].weight }];
-            // println!("{:?}", node);
-            while to_traverse.len() > 0 {
-                // let next_node: Node = to_traverse.pop().unwrap();
-                let next_node: &Node = to_traverse.last().unwrap();
-                // let n = &next_node.name.clone();
-                // println!("{}", n);
-                if !traversed.iter().any(|n| n.name == next_node.name.clone()) {
-                    traversed.push(Node{ name: next_node.name.clone(), weight: next_node.weight });
-                }
-                for j in 0..nodes.len() {
-                    if nodes[j][0].name == next_node.name {
-                        let mut found: bool = false;
-                        let tmp_node: &mut [Node] = &mut nodes[j][1..];
-                        tmp_node.sort();
-                        for k in 0..tmp_node.len() {
-                            if !traversed.iter().any(|n| n.name == tmp_node[k].name.clone()) {
-                                to_traverse.push(Node { name: tmp_node[k].name.clone(), weight: tmp_node[k].weight });
-                                found = true;
-                                // println!("traversed {:?}", traversed);
-                                // println!("to_traverse {:?}", to_traverse);
-                                break;
-                            }
-                        }
-                        if !found {
-                            // println!("???????????????? {:?}", to_traverse.pop());
-                            to_traverse.pop();
-                        }
-                        break;
-                    }
-                }
-            }
-            
+    // let topo_node = topological_sort(&graph);
+    // let mut traversed = HashSet::new();
+    let mut node_order: Vec<String> = Vec::new();
+    // println!("{:?}", graph[source]);
+    // println!("{:?}", print_type(&graph[source]));
+    // for node in graph.keys() {
+    //     dfs(&node, &graph, &mut node_order);
+    // }
+    dfs(&source, &graph, &mut node_order);
+    for node in graph.keys() {
+        if !node_order.contains(&node) {
+            dfs(&node, &graph, &mut node_order);
         }
     }
-    for node in traversed {
-        print!("{} ", node.name);
+    for node in node_order {
+        print!("{} ", node);
     }
     println!();
-    // println!("{:?}", traversed);
-
-
-    Ok(())
+}
+fn print_type<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>());
+}
+fn topological_sort(adj: &Vec<(String, i32)>) -> Vec<(String, i32)> {
+    let mut tmp = adj.clone();
+    tmp.sort_by(|a, b| a.0.cmp(&b.0));
+    tmp
+}
+// fn dfs(source: &String, graph: &HashMap<String, Vec<(String, i32)>>, traversed: &mut HashSet<String>, order: &mut Vec<String>) {
+fn dfs(source: &String, graph: &HashMap<String, Vec<(String, i32)>>, order: &mut Vec<String>) {
+    // traversed.insert(source.clone());
+    order.push(source.clone());
+    for node in topological_sort(&graph[source]) {
+        // println!("{:?}", node.0);
+        let nxt = node.0.clone();
+        if !order.contains(&nxt) {
+            dfs(&nxt, graph, order);
+        }
+    }
 }
