@@ -1,0 +1,14 @@
+title = "Implementing a Scanner and a Parser for an Expression Language"
+
+[package]
+name = "pa1"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "scanparse"
+path = "src/main.rs"
+
+
+[owner]
+name = "Seunggyu Lee"
