@@ -72,79 +72,17 @@ fn main() {
     rules.push(ProductionRule{lhs: String::from("FACTOR"), rhs: String::from("IDENTIFIER | NUMBER | (EXPR)")});
 
     let mut llrules = elm_ambig(&mut rules);
-    // println!("llrules");
-    // for llrule in &llrules {
-    //     println!("{} -> {}", llrule.lhs, llrule.rhs);
-    // }
-    // println!("");
+
     let mut firsts: HashMap<String, HashSet<String>> = HashMap::new();
     firsts = compute_first(&llrules);
-    // println!("first");
-    // for key in firsts.keys() {
-    //     println!("{} -> {:?}", key, firsts[key].iter());
-    // }
-    // println!("");
+    
     let mut follows: HashMap<String, HashSet<String>> = HashMap::new();
     follows = compute_follow(&llrules, &mut firsts, "EXPR");
-    // println!("follow");
-    // for key in follows.keys() {
-    //     println!("{} -> {:?}", key, follows[key].iter());
-    // }
-    // println!("");
 
     //TODO: construct first, follow, parse table ??
-    // let mut parse_table: HashMap<String, HashMap<String, ProductionRule>> = HashMap::new();
-    // parse_table.insert("EXPR".to_string(), HashMap::new());
-    // parse_table.insert("EXPRDASH".to_string(), HashMap::new());
-    // parse_table.insert("TERM".to_string(), HashMap::new());
-    // parse_table.insert("TERMDASH".to_string(), HashMap::new());
-    // parse_table.insert("FACTOR".to_string(), HashMap::new());
+    let mut parse_table: HashMap<(String, String), ProductionRule> = HashMap::new();
+    parse_table = gen_parse_table(&llrules, &firsts, &follows);
 
-    // parse_table.get_mut("EXPR").unwrap().insert("IDENTIFIER".to_string(), ProductionRule{lhs: rules[0].lhs.clone(), rhs: rules[0].rhs.clone()});
-    // parse_table.get_mut("EXPR").unwrap().insert("NUMBER".to_string(), ProductionRule{lhs: rules[0].lhs.clone(), rhs: rules[0].rhs.clone()});
-    // parse_table.get_mut("EXPR").unwrap().insert("(".to_string(), ProductionRule{lhs: rules[0].lhs.clone(), rhs: rules[0].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert("+".to_string(), ProductionRule{lhs: rules[1].lhs.clone(), rhs: rules[1].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert(")".to_string(), ProductionRule{lhs: rules[2].lhs.clone(), rhs: rules[2].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert("$".to_string(), ProductionRule{lhs: rules[2].lhs.clone(), rhs: rules[2].rhs.clone()});
-    // parse_table.get_mut("TERM").unwrap().insert("IDENTIFIER".to_string(), ProductionRule{lhs: rules[3].lhs.clone(), rhs: rules[3].rhs.clone()});
-    // parse_table.get_mut("TERM").unwrap().insert("NUMBER".to_string(), ProductionRule{lhs: rules[3].lhs.clone(), rhs: rules[3].rhs.clone()});
-    // parse_table.get_mut("TERM").unwrap().insert("(".to_string(), ProductionRule{lhs: rules[3].lhs.clone(), rhs: rules[3].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert("+".to_string(), ProductionRule{lhs: rules[5].lhs.clone(), rhs: rules[5].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert("*".to_string(), ProductionRule{lhs: rules[4].lhs.clone(), rhs: rules[4].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert(")".to_string(), ProductionRule{lhs: rules[5].lhs.clone(), rhs: rules[5].rhs.clone()});
-    // parse_table.get_mut("EXPRDASH").unwrap().insert("$".to_string(), ProductionRule{lhs: rules[5].lhs.clone(), rhs: rules[2].rhs.clone()});
-    // parse_table.get_mut("FACTOR").unwrap().insert("IDENTIFIER".to_string(), ProductionRule{lhs: rules[6].lhs.clone(), rhs: rules[6].rhs.clone()});
-    // parse_table.get_mut("FACTOR").unwrap().insert("NUMBER".to_string(), ProductionRule{lhs: rules[7].lhs.clone(), rhs: rules[7].rhs.clone()});
-    // parse_table.get_mut("FACTOR").unwrap().insert("(".to_string(), ProductionRule{lhs: rules[8].lhs.clone(), rhs: rules[8].rhs.clone()});
-
-    // let mut firsts: HashMap<String, Vec<String>> = HashMap::new();
-    // firsts.insert("EXPR".to_string(), Vec::new());
-    // firsts.insert("EXPRDASH".to_string(), Vec::new());
-    // firsts.insert("TERM".to_string(), Vec::new());
-    // firsts.insert("TERMDASH".to_string(), Vec::new());
-    // firsts.insert("FACTOR".to_string(), Vec::new());
-
-    // firsts.get_mut("EXPR").unwrap().push("IDENTIFIER".to_string());
-    // firsts.get_mut("EXPR").unwrap().push("(".to_string());
-    // firsts.get_mut("TERM").unwrap().push("IDENTIFIER".to_string());
-    // firsts.get_mut("TERM").unwrap().push("(".to_string());
-    // firsts.get_mut("FACTOR").unwrap().push("IDENTIFIER".to_string());
-    // firsts.get_mut("FACTOR").unwrap().push("(".to_string());
-    // firsts.get_mut("EXPRDASH").unwrap().push("+".to_string());
-    // firsts.get_mut("EXPRDASH").unwrap().push("EPSILON".to_string());
-    // firsts.get_mut("TERMDASH").unwrap().push("*".to_string());
-    // firsts.get_mut("TERMDASH").unwrap().push("EPSILON".to_string());
-
-    // for rule in rules {
-    //     println!("{} -> {}", rule.lhs, rule.rhs);
-    // }
-
-    // for expr in expressions {
-    //     println!("{:?}", expr);
-    // }
-
-    // let tmp_parse: i32 = "0123".parse().unwrap();
-    // println!("{}", tmp_parse);
 
 }
 fn scanner() {
@@ -204,6 +142,7 @@ fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     rec_rules
 }
 
+//TODO: need implementation
 fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut fac_rules: Vec<ProductionRule> = Vec::new();
     for rule in rules {
@@ -309,6 +248,45 @@ fn compute_follow(llrules: &Vec<ProductionRule>, firsts: &mut HashMap<String, Ha
     // }
 
     follow
+}
+
+fn gen_parse_table(llrules: &Vec<ProductionRule>, firsts: &HashMap<String, HashSet<String>>, follows: &HashMap<String, HashSet<String>>) -> HashMap<(String, String), ProductionRule> {
+    let mut parse_table: HashMap<(String, String), ProductionRule> = HashMap::new();
+
+    for rule in llrules {
+        let rhs_token = tokenize(&rule.rhs);
+        let mut rhs_first = HashSet::new();
+        let mut eps_all = true;
+        for token in rhs_token {
+            let tok_first = firsts.get(&token).cloned().unwrap_or(HashSet::from([token.to_string()]));
+
+            rhs_first.extend(tok_first.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
+            if !tok_first.contains("EPSILON") {
+                eps_all = false;
+                break;
+            }
+        }
+        if eps_all {
+            rhs_first.insert("EPSILON".to_string());
+        }
+
+        for term in rhs_first.iter().filter(|&s| s != "EPSILON") {
+            parse_table.insert((rule.lhs.clone(), term.clone()), ProductionRule{lhs: rule.lhs.clone(), rhs: rule.rhs.clone()});
+        }
+
+        if rhs_first.contains("EPSILON") {
+            if let Some(follow) = follows.get(&rule.lhs) {
+                for term in follow {
+                    parse_table.insert((rule.lhs.clone(), term.clone()), ProductionRule{lhs: rule.lhs.clone(), rhs: rule.rhs.clone()});
+                }
+            }
+        }
+    }
+    // for nterm in parse_table.keys() {
+    //     println!("{:?} {:?}\n", nterm, parse_table[nterm]);
+    // }
+    
+    parse_table
 }
 
 fn is_terminal(sym: &str) -> bool {
