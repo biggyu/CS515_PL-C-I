@@ -67,9 +67,9 @@ fn main() {
     }
     
     let mut rules: Vec<ProductionRule> = Vec::new();
-    rules.push(ProductionRule{lhs: "EXPR".to_string(), rhs: "EXPR + TERM | TERM".to_string()});
-    rules.push(ProductionRule{lhs: "TERM".to_string(), rhs: "TERM * FACTOR | FACTOR".to_string()});
-    rules.push(ProductionRule{lhs: "FACTOR".to_string(), rhs: "IDENTIFIER | NUMBER | (EXPR)".to_string()});
+    rules.push(ProductionRule{lhs: String::from("EXPR"), rhs: String::from("EXPR + TERM | TERM")});
+    rules.push(ProductionRule{lhs: String::from("TERM"), rhs: String::from("TERM * FACTOR | FACTOR")});
+    rules.push(ProductionRule{lhs: String::from("FACTOR"), rhs: String::from("IDENTIFIER | NUMBER | (EXPR)")});
     // rules.push(ProductionRule{lhs: "EXPR".to_string(), rhs: "TERM EXPRDASH".to_string()});
     // rules.push(ProductionRule{lhs: "EXPRDASH".to_string(), rhs: "+ TERM EXPRDASH".to_string()});
     // rules.push(ProductionRule{lhs: "EXPRDASH".to_string(), rhs: "EPSILON".to_string()});
@@ -81,14 +81,14 @@ fn main() {
     // rules.push(ProductionRule{lhs: "FACTOR".to_string(), rhs: "(EXPR)".to_string()});
 
     let mut llrules = elm_ambig(&mut rules);
-
-    for llrule in &llrules {
-        println!("{} -> {}", llrule.lhs, llrule.rhs);
-    }
-
+    // println!("llrules");
+    // for llrule in &llrules {
+    //     println!("{} -> {}", llrule.lhs, llrule.rhs);
+    // }
+    // // println!("");
     let mut firsts: HashMap<String, HashSet<String>> = HashMap::new();
     firsts = compute_first(&llrules);
-    let mut follow: HashMap<String, HashSet<String>> = HashMap::new();
+    // let mut follow: HashMap<String, HashSet<String>> = HashMap::new();
 
     //TODO: construct first, follow, parse table ??
     // let mut parse_table: HashMap<String, HashMap<String, ProductionRule>> = HashMap::new();
@@ -156,6 +156,15 @@ fn parser() {
 fn elm_ambig(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut llrules = elm_leftRecursion(rules);
     // llrules = elm_leftFactoring(&mut llrules);
+    for mut rule in &mut llrules {
+        for token in tokenize(&rule.rhs) {
+            let mut tmp: String = token.clone();
+            if tmp.contains(&BOPEN) || tmp.contains(&BCLOSE) {
+                rule.rhs = separate_brackets(&tmp);
+            }
+        }
+    }
+    
     llrules
 }
 
@@ -174,16 +183,16 @@ fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
                     let tmp1: Vec<_> = elm.split_whitespace().collect();
                     let tmp2: String = tmp1[1..].iter().map(|i| i.to_string() + " ").collect();
                     rec_rules.push(ProductionRule{lhs: rule.lhs.clone() + "DASH", rhs: tmp2 + &rule.lhs.clone() + "DASH"});
-                    rec_rules.push(ProductionRule{lhs: rule.lhs.clone() + "DASH", rhs: "EPSILON".to_string()});   
+                    rec_rules.push(ProductionRule{lhs: rule.lhs.clone() + "DASH", rhs: String::from("EPSILON")});   
                 }
                 else {
-                    rec_rules.push(ProductionRule{lhs: rule.lhs.clone(), rhs: elm.to_string() + " " + &rule.lhs.clone() + "DASH"});
+                    rec_rules.push(ProductionRule{lhs: rule.lhs.clone(), rhs: String::from(elm) + " " + &rule.lhs.clone() + "DASH"});
                 }
             }
         }
         else {
             for (idx, elm) in rule_rhs.clone().enumerate() {
-                rec_rules.push(ProductionRule{lhs: rule.lhs.clone(), rhs: elm.to_string()});
+                rec_rules.push(ProductionRule{lhs: rule.lhs.clone(), rhs: String::from(elm)});
             }
         }
     }
@@ -211,35 +220,41 @@ fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
 fn compute_first(llrules: &Vec<ProductionRule>) -> HashMap<String, HashSet<String>> {
     let mut first: HashMap<String, HashSet<String>> = HashMap::new();
     for rule in llrules {
-        let mut rule_rhs = rule.rhs.split("|");
-        for elm in rule_rhs {
-            // println!("{} {}", elm, is_terminal(elm));
-            let tmp: Vec<_> = elm.split_whitespace().collect();
-            for token in tmp {
-                if is_terminal(token) {
-                    first.entry(token.to_string()).or_default().insert(token.to_string());
-                }
+        for token in &tokenize(&rule.rhs) {
+            if is_terminal(token) {
+                first.entry(token.to_string()).or_default().insert(token.to_string());
             }
         }
     }
-
     let mut changed = true;
     while changed {
         changed = false;
-        for rule in rules {
-            let mut rule_rhs = rule.rhs.split("|");
-            let mut rhs_tokens: Vec<_> = Vec::new();
-            for elm in rule_rhs {
-                // println!("{} {}", elm, is_terminal(elm));
-                rhs_tokens = elm.split_whitespace().collect();
+        for rule in llrules {
+            let mut eps_all = true;
+            let mut len: usize = 0;
+            for token in &tokenize(&rule.rhs) {
+                let tok_first = first.get(token).cloned().unwrap_or_default();
+                let lhs_first = first.entry(rule.lhs.clone()).or_default();
 
+                len = lhs_first.len();
+    
+                lhs_first.extend(tok_first.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
+                if !tok_first.contains("EPSILON") {
+                    eps_all = false;
+                    break;
+                }
             }
-
+            if eps_all {
+                first.entry(rule.lhs.clone()).or_default().insert("EPSILON".to_string());
+            }
+            if first[&rule.lhs].len() > len {
+                changed = true;
+            }
         }
     }
-    for key in first.keys() {
-        println!("{}: {:?}", key, first.get(key));
-    }
+    // for key in first.keys() {
+    //     println!("{}->{:?}", key, first[key].iter());
+    // }
     first
 }
 
@@ -252,4 +267,27 @@ fn compute_follow(llrules: &Vec<ProductionRule>, first: &HashMap<String, HashSet
 fn is_terminal(sym: &str) -> bool {
     let terminals = ["+", "*", "(", ")", "IDENTIFIER", "NUMBER"];
     terminals.contains(&sym)
+}
+
+fn tokenize(rhs: &str) -> Vec<String> {
+    rhs.split_whitespace().map(|s| s.to_string()).collect()
+}
+
+fn separate_brackets(s: &str) -> String {
+    let mut tokens = String::new();
+
+    for ch in s.chars() {
+        if ch == '('{
+            tokens.push(ch);
+            tokens.push(' ');
+        }
+        else if ch == ')' {
+            tokens.push(' ');
+            tokens.push(ch);
+        }
+        else {
+            tokens.push(ch);
+        }
+    }
+    tokens
 }
