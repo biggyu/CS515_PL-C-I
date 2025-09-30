@@ -70,25 +70,27 @@ fn main() {
     rules.push(ProductionRule{lhs: String::from("EXPR"), rhs: String::from("EXPR + TERM | TERM")});
     rules.push(ProductionRule{lhs: String::from("TERM"), rhs: String::from("TERM * FACTOR | FACTOR")});
     rules.push(ProductionRule{lhs: String::from("FACTOR"), rhs: String::from("IDENTIFIER | NUMBER | (EXPR)")});
-    // rules.push(ProductionRule{lhs: "EXPR".to_string(), rhs: "TERM EXPRDASH".to_string()});
-    // rules.push(ProductionRule{lhs: "EXPRDASH".to_string(), rhs: "+ TERM EXPRDASH".to_string()});
-    // rules.push(ProductionRule{lhs: "EXPRDASH".to_string(), rhs: "EPSILON".to_string()});
-    // rules.push(ProductionRule{lhs: "TERM".to_string(), rhs: "FACTOR TERMDASH".to_string()});
-    // rules.push(ProductionRule{lhs: "TERMDASH".to_string(), rhs: "* FACTOR TERMDASH".to_string()});
-    // rules.push(ProductionRule{lhs: "TERMDASH".to_string(), rhs: "EPSILON".to_string()});
-    // rules.push(ProductionRule{lhs: "FACTOR".to_string(), rhs: "IDENTIFIER".to_string()});
-    // rules.push(ProductionRule{lhs: "FACTOR".to_string(), rhs: "NUMBER".to_string()});
-    // rules.push(ProductionRule{lhs: "FACTOR".to_string(), rhs: "(EXPR)".to_string()});
 
     let mut llrules = elm_ambig(&mut rules);
     // println!("llrules");
     // for llrule in &llrules {
     //     println!("{} -> {}", llrule.lhs, llrule.rhs);
     // }
-    // // println!("");
+    // println!("");
     let mut firsts: HashMap<String, HashSet<String>> = HashMap::new();
     firsts = compute_first(&llrules);
-    // let mut follow: HashMap<String, HashSet<String>> = HashMap::new();
+    // println!("first");
+    // for key in firsts.keys() {
+    //     println!("{} -> {:?}", key, firsts[key].iter());
+    // }
+    // println!("");
+    let mut follows: HashMap<String, HashSet<String>> = HashMap::new();
+    follows = compute_follow(&llrules, &mut firsts, "EXPR");
+    // println!("follow");
+    // for key in follows.keys() {
+    //     println!("{} -> {:?}", key, follows[key].iter());
+    // }
+    // println!("");
 
     //TODO: construct first, follow, parse table ??
     // let mut parse_table: HashMap<String, HashMap<String, ProductionRule>> = HashMap::new();
@@ -226,6 +228,7 @@ fn compute_first(llrules: &Vec<ProductionRule>) -> HashMap<String, HashSet<Strin
             }
         }
     }
+    first.entry("EPSILON".to_string()).or_default().insert("EPSILON".to_string());
     let mut changed = true;
     while changed {
         changed = false;
@@ -251,15 +254,59 @@ fn compute_first(llrules: &Vec<ProductionRule>) -> HashMap<String, HashSet<Strin
                 changed = true;
             }
         }
+        // for key in first.keys() {
+        //     println!("{}->{:?}", key, first[key].iter());
+        // }
+        // println!("");
     }
+    first.remove("EPSILON");
     // for key in first.keys() {
     //     println!("{}->{:?}", key, first[key].iter());
     // }
     first
 }
 
-fn compute_follow(llrules: &Vec<ProductionRule>, first: &HashMap<String, HashSet<String>>, start_symbol: &str) -> HashMap<String, HashSet<String>> {
+fn compute_follow(llrules: &Vec<ProductionRule>, firsts: &mut HashMap<String, HashSet<String>>, start_symbol: &str) -> HashMap<String, HashSet<String>> {
     let mut follow: HashMap<String, HashSet<String>> = HashMap::new();
+    follow.entry(start_symbol.to_string()).or_default().insert("$".to_string());
+
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for rule in llrules {
+            let rhs = tokenize(&rule.rhs);
+
+            let A = &rule.lhs;
+            let mut len: usize = 0;
+            if rhs.len() > 1 {
+                let A_follow = follow.get(A).cloned().unwrap_or_default();
+                let B_follow = follow.entry(rhs[1].clone()).or_default();
+    
+                len = B_follow.len();
+                
+                if rhs.len() == 2 {
+                    B_follow.extend(A_follow.iter().map(|s| s.to_string()));
+                }
+                else if rhs.len() == 3 {
+                    let beta_first = firsts.entry(rhs[2].clone()).or_default();
+                    B_follow.extend(beta_first.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
+                    if beta_first.contains("EPSILON") {
+                        B_follow.extend(A_follow.iter().map(|s| s.to_string()));
+                    }
+                }
+                if B_follow.len() > len {
+                    changed = true;
+                }
+            }
+        }
+        // for key in follow.keys() {
+        //     println!("{}->{:?}", key, follow[key].iter());
+        // }
+        // println!("");
+    }
+    // for key in follow.keys() {
+    //     println!("{}->{:?}", key, follow[key].iter());
+    // }
 
     follow
 }
