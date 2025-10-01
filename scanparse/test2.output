@@ -1,0 +1,11 @@
+EXPR 
+TERM EXPRDASH 
+FACTOR TERMDASH PLUS TERM EXPRDASH 
+IDENTIFIER(a) EPSILON FACTOR TERMDASH EPSILON 
+IDENTIFIER(b) STAR FACTOR TERMDASH 
+IDENTIFIER(c) EPSILON 
+
+Err("No production rule for (TERMDASH, () in parse table")
+
+Err("Syntax error: expected ')', got '$'")
+

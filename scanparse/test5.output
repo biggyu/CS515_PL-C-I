@@ -1,0 +1,6 @@
+Err("No production rule for (TERM, $) in parse table")
+
+Err("No production rule for (TERMDASH, ))))))) in parse table")
+
+Err("No production rule for (TERMDASH, a) in parse table")
+
