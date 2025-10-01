@@ -34,34 +34,28 @@ fn main() {
     let mut lines = contents.lines();
 
     let mut expressions: Vec<Vec<_>> = Vec::new();
-    
     for line in lines {
-        expressions.push(line.split_whitespace().collect());
-        for expr in expressions.last_mut() {
-            let mut i = 0;
-            while i < expr.len() {
-                if let Some(index) = expr[i].find(&BOPEN) {
-                    *expr = [&expr[0..i], &[BOPEN], &[&expr[i][(index + 1)..]], &expr[(i + 1)..]].concat();
+        // expressions.push(line.split_whitespace().collect());
+        let mut modified_expression = Vec::new();
+        for token in tokenize(line) {
+            let mut start = 0;
+            for (i, c) in token.char_indices() {
+                if c == '(' || c == ')' {
+                    if start < i {
+                        modified_expression.push(token[start..i].to_string());
+                    }
+                    modified_expression.push(c.to_string());
+    
+                    start = i + 1;
                 }
-                if let Some(index) = expr[i].find(&BCLOSE) {
-                    if index + 1 == expr[i].len() {
-                        *expr = [&expr[0..i], &[&expr[i][..index]], &[BCLOSE], &expr[(i + 1)..]].concat();
-                    }
-                    else if index != 0{
-                        *expr = [&expr[0..i], &[&expr[i][..index]], &[BCLOSE], &[&expr[i][(index+1)..]], &expr[(i + 1)..]].concat();
-                        // println!("{:?}\n", &expr);
-                    }
-                    else {
-                        *expr = [&expr[0..i], &[BCLOSE], &[&expr[i][(index+1)..]], &expr[(i + 1)..]].concat();
-                    }
-                    i += 1;
-                    // println!("{}", expr.len());
-                }
-                i += 1;
+            }
+            if start < token.len() {
+                modified_expression.push(token[start..].to_string());
             }
         }
+        expressions.push(modified_expression);
     }
-    // for expr in &expressions {
+    // for expr in expressions {
     //     println!("{:?}", expr);
     // }
     let start_symbol = "EXPR".to_string();
