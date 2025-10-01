@@ -30,6 +30,8 @@ sh build.sh
 
 ## Run Instructions
 
+To run tests on all test#.input files and generate test#.output"
+
 ```bash
-./scanparse test.input
+sh run_tests.sh
 ```
