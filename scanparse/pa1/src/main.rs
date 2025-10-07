@@ -19,12 +19,12 @@ struct ProductionRule {
     rhs: String,
 }
 
-// #[derive(Debug, Clone)]
-// struct ParseNode {
-//     token: String,
-//     value: Option<String>,
-//     children: Vec<ParseNode>,
-// }
+#[derive(Debug, Clone)]
+struct ParseNode {
+    token: String,
+    value: Option<String>,
+    children: Vec<Result<ParseNode, String>>,
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -76,17 +76,20 @@ fn main() {
     parse_table = gen_parse_table(&llrules, &firsts, &follows);
 
     for expression in expressions {
-        let tmp = expression.iter().map(|s| s.to_string()).collect();
-        let parsed = ll1_parse(&tmp, &parse_table, &start_symbol);
+        let mut tmp = expression.iter().map(|s| s.to_string()).collect();
+        let parsed = ll1_parse(&mut tmp, &parse_table, &start_symbol);
+        //TODO: print format
         if let Ok(root) = parsed {
-            let mut ordered_keys: Vec<_> = root.keys().into_iter().collect();
-            ordered_keys.sort_by(|x, y| x.cmp(&y));
-            for key in ordered_keys {
-                for term in &root[key] {
-                    print!("{} ", term);
-                }
-                println!();
-            }
+            //! traverse for err and print it only
+            println!("{:?}", root);
+            // let mut ordered_keys: Vec<_> = root.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     for term in &root[key] {
+            //         print!("{} ", term);
+            //     }
+            //     println!();
+            // }
         }
         else {
             println!("{:?}", parsed);
@@ -298,90 +301,186 @@ fn gen_parse_table(llrules: &Vec<ProductionRule>, firsts: &HashMap<String, HashS
     parse_table
 }
 
-fn ll1_parse(expression: &Vec<String>, parse_table: &HashMap<(String, String), ProductionRule>, start_symbol: &str) -> Result<HashMap<usize, Vec<String>>, String> {
-    let mut input = expression.clone();
-    input.push("$".to_string());
+fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, String), ProductionRule>, start_symbol: &str) -> Result<ParseNode, String> {
+    // let mut input = expression.clone();
+    expression.push("$".to_string());
     
     // let mut root = ParseNode{token: start_symbol.to_string(), value: None, children: Vec::new()};
     // let mut stack: Vec<(ParseNode, Vec<String>)> = vec![(root.clone(), vec![start_symbol.to_string()])];
     let mut stack: Vec<(String, usize)> = vec![("$".to_string(), 0), (start_symbol.to_string(), 0)];
-    let mut actions: Vec<(String, usize)> = Vec::new();
-    let mut parse_tree: HashMap<usize, Vec<String>> = HashMap::new();
-    parse_tree.entry(0).or_default().push(start_symbol.to_string());
-    let mut expr_index: usize = 0;
-
-    while let Some((top, level)) = stack.pop() {
-        let cur_token = &input[expr_index];
-        if is_terminal(&top) || top == "$" {
-            if *cur_token == top {
-                actions.push((format!("Matched {}", cur_token).to_string(), level));
-                expr_index += 1;
-            }
-            else if top == "IDENTIFIER" && is_identifier(&cur_token) {
-                actions.push((format!("Matched IDENTIFIER({})", cur_token).to_string(), level));
-                expr_index += 1;
-            }
-            else if top == "NUMBER" && is_number(&cur_token) {
-                actions.push((format!("Matched NUMBER({})", cur_token).to_string(), level));
-                expr_index += 1;
-            }
-            else {
-                return Err(format!(
-                    "Syntax error: expected '{}', got '{}'",
-                    top, cur_token
-                ));
-            }
+    // let mut actions: Vec<(String, usize)> = Vec::new();
+    let mut parse_root = ParseNode{token: start_symbol.to_string(), value: None, children: Vec::new(),};
+    // let mut parse_tree: HashMap<usize, Vec<String>> = HashMap::new();
+    // parse_tree.entry(0).or_default().push(start_symbol.to_string());
+    // let mut expr_index: usize = 0;
+    let top = start_symbol.to_string();
+    let cur_token = expression[0].clone();
+    // let cur_token = &input[expr_index];
+    if is_terminal(&top) || top == "$" {
+        if *cur_token == top {
+            parse_root.value = Some(cur_token.clone());
+            expression.remove(0);
+            // actions.push((format!("Matched {}", cur_token).to_string(), level));
+            // expr_index += 1;
+        }
+        else if top == "IDENTIFIER" && is_identifier(&cur_token) {
+            parse_root.value = Some(cur_token.clone());
+            expression.remove(0);
+            // actions.push((format!("Matched IDENTIFIER({})", cur_token).to_string(), level));
+            // expr_index += 1;
+        }
+        else if top == "NUMBER" && is_number(&cur_token) {
+            parse_root.value = Some(cur_token.clone());
+            expression.remove(0);
+            // actions.push((format!("Matched NUMBER({})", cur_token).to_string(), level));
+            // expr_index += 1;
         }
         else {
-            let mut key = ("".to_string(), "".to_string());
-            if is_number(&cur_token) {
-                key = (top.to_string(), "NUMBER".to_string());
-            }
-            else if is_identifier(&cur_token) {
-                key = (top.to_string(), "IDENTIFIER".to_string());
-            }
-            else {
-                key = (top.to_string(), cur_token.to_string());
-            }
-            if let Some(rule) = parse_table.get(&key) {
-                let rhs_token = tokenize(&rule.rhs);
-                for token in tokenize(&rule.rhs).iter().rev() {
-                    if token != "EPSILON"{
-                        stack.push((token.to_string(), level + 1));
-                    }
+            return Err(format!(
+                "Syntax error: expected '{}', got '{}'",
+                top, cur_token
+            ));
+        }
+    }
+    else {
+        let mut key = ("".to_string(), "".to_string());
+        if is_number(&cur_token) {
+            key = (top.to_string(), "NUMBER".to_string());
+        }
+        else if is_identifier(&cur_token) {
+            key = (top.to_string(), "IDENTIFIER".to_string());
+        }
+        else {
+            key = (top.to_string(), cur_token.to_string());
+        }
+        if let Some(rule) = parse_table.get(&key) {
+            // let rhs_token = tokenize(&rule.rhs);
+            // for token in tokenize(&rule.rhs).iter().rev() {
+            //     if token != "EPSILON"{
+            //         stack.push((token.to_string(), level + 1));
+            //     }
+            // }
+            for (index, token) in tokenize(&rule.rhs).iter().enumerate() {
+                if token != "EPSILON" {
+                    parse_root.children.push(ll1_parse(expression, &parse_table, &token.to_string()));
                 }
-                for token in tokenize(&rule.rhs) {
-                    if is_terminal(&token) && cur_token == STAR {
-                        parse_tree.entry(level + 1).or_default().push("STAR".to_string());
-                    }
-                    else if is_terminal(&token) && cur_token == PLUS {
-                        parse_tree.entry(level + 1).or_default().push("PLUS".to_string());
-                    }
-                    else if token == "IDENTIFIER" && is_identifier(&cur_token) {
-                        parse_tree.entry(level + 1).or_default().push(format!("IDENTIFIER({})", cur_token.to_string()));
-                    }
-                    else if token == "NUMBER" && is_number(&cur_token) {
-                        parse_tree.entry(level + 1).or_default().push(format!("NUMBER({})", cur_token.to_string()));
-                    }
-                    else {
-                        parse_tree.entry(level + 1).or_default().push(token.to_string());
-                    }
+                else {
+                    parse_root.children.push(Ok(ParseNode{token: "EPSILON".to_string(), value: None, children: Vec::new(),}));
                 }
-                actions.push((format!("Apply {:?}", rule).to_string(), level));
+                // if is_terminal(&token) && cur_token == STAR {
+                //     parse_tree.entry(level + 1).or_default().push("STAR".to_string());
+                // }
+                // else if is_terminal(&token) && cur_token == PLUS {
+                //     parse_tree.entry(level + 1).or_default().push("PLUS".to_string());
+                // }
+                // else if token == "IDENTIFIER" && is_identifier(&cur_token) {
+                //     parse_tree.entry(level + 1).or_default().push(format!("IDENTIFIER({})", cur_token.to_string()));
+                // }
+                // else if token == "NUMBER" && is_number(&cur_token) {
+                //     parse_tree.entry(level + 1).or_default().push(format!("NUMBER({})", cur_token.to_string()));
+                // }
+                // else {
+                //     parse_tree.entry(level + 1).or_default().push(token.to_string());
+                // }
             }
-            else {
-                return Err(format!(
-                    "No production rule for ({}, {}) in parse table",
-                    top, cur_token
-                ));
-            }
+            // actions.push((format!("Apply {:?}", rule).to_string(), level));
+        }
+        else {
+            return Err(format!(
+                "No production rule for ({}, {}) in parse table",
+                top, cur_token
+            ));
         }
     }
     // for action in actions {
     //     println!("{:?}", action);
     // }
-    Ok(parse_tree.clone())
+    Ok(parse_root.clone())
 }
+// fn ll1_parse(expression: &Vec<String>, parse_table: &HashMap<(String, String), ProductionRule>, start_symbol: &str) -> Result<HashMap<usize, Vec<String>>, String> {
+//     let mut input = expression.clone();
+//     input.push("$".to_string());
+    
+//     // let mut root = ParseNode{token: start_symbol.to_string(), value: None, children: Vec::new()};
+//     // let mut stack: Vec<(ParseNode, Vec<String>)> = vec![(root.clone(), vec![start_symbol.to_string()])];
+//     let mut stack: Vec<(String, usize)> = vec![("$".to_string(), 0), (start_symbol.to_string(), 0)];
+//     let mut actions: Vec<(String, usize)> = Vec::new();
+//     let mut parse_tree: HashMap<usize, Vec<String>> = HashMap::new();
+//     parse_tree.entry(0).or_default().push(start_symbol.to_string());
+//     let mut expr_index: usize = 0;
+
+//     while let Some((top, level)) = stack.pop() {
+//         let cur_token = &input[expr_index];
+//         if is_terminal(&top) || top == "$" {
+//             if *cur_token == top {
+//                 actions.push((format!("Matched {}", cur_token).to_string(), level));
+//                 expr_index += 1;
+//             }
+//             else if top == "IDENTIFIER" && is_identifier(&cur_token) {
+//                 actions.push((format!("Matched IDENTIFIER({})", cur_token).to_string(), level));
+//                 expr_index += 1;
+//             }
+//             else if top == "NUMBER" && is_number(&cur_token) {
+//                 actions.push((format!("Matched NUMBER({})", cur_token).to_string(), level));
+//                 expr_index += 1;
+//             }
+//             else {
+//                 return Err(format!(
+//                     "Syntax error: expected '{}', got '{}'",
+//                     top, cur_token
+//                 ));
+//             }
+//         }
+//         else {
+//             let mut key = ("".to_string(), "".to_string());
+//             if is_number(&cur_token) {
+//                 key = (top.to_string(), "NUMBER".to_string());
+//             }
+//             else if is_identifier(&cur_token) {
+//                 key = (top.to_string(), "IDENTIFIER".to_string());
+//             }
+//             else {
+//                 key = (top.to_string(), cur_token.to_string());
+//             }
+//             if let Some(rule) = parse_table.get(&key) {
+//                 let rhs_token = tokenize(&rule.rhs);
+//                 for token in tokenize(&rule.rhs).iter().rev() {
+//                     if token != "EPSILON"{
+//                         stack.push((token.to_string(), level + 1));
+//                     }
+//                 }
+//                 for token in tokenize(&rule.rhs) {
+//                     if is_terminal(&token) && cur_token == STAR {
+//                         parse_tree.entry(level + 1).or_default().push("STAR".to_string());
+//                     }
+//                     else if is_terminal(&token) && cur_token == PLUS {
+//                         parse_tree.entry(level + 1).or_default().push("PLUS".to_string());
+//                     }
+//                     else if token == "IDENTIFIER" && is_identifier(&cur_token) {
+//                         parse_tree.entry(level + 1).or_default().push(format!("IDENTIFIER({})", cur_token.to_string()));
+//                     }
+//                     else if token == "NUMBER" && is_number(&cur_token) {
+//                         parse_tree.entry(level + 1).or_default().push(format!("NUMBER({})", cur_token.to_string()));
+//                     }
+//                     else {
+//                         parse_tree.entry(level + 1).or_default().push(token.to_string());
+//                     }
+//                 }
+//                 actions.push((format!("Apply {:?}", rule).to_string(), level));
+//             }
+//             else {
+//                 return Err(format!(
+//                     "No production rule for ({}, {}) in parse table",
+//                     top, cur_token
+//                 ));
+//             }
+//         }
+//     }
+//     // for action in actions {
+//     //     println!("{:?}", action);
+//     // }
+//     Ok(parse_tree.clone())
+// }
 
 fn is_terminal(sym: &str) -> bool {
     let terminals = ["+", "*", "(", ")", "IDENTIFIER", "NUMBER"];
