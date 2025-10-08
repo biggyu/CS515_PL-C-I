@@ -1,0 +1,14 @@
+title = "Generating the AST and LLVM IR for the Expression Language"
+
+[package]
+name = "pa2"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "first-compiler"
+path = "src/main.rs"
+
+
+[owner]
+name = "Seunggyu Lee"
