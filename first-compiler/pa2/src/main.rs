@@ -94,7 +94,17 @@ fn main() {
             // println!("{:?}", root);
             let ast = gen_ast(&root);
             if let Ok(root) = ast {
+                let mut traversed = HashMap::new();
                 println!("{:?}", root);
+                bfs_traverse(&root, 0, &mut traversed);
+                let mut ordered_keys: Vec<_> = traversed.keys().into_iter().collect();
+                ordered_keys.sort_by(|x, y| x.cmp(&y));
+                for key in ordered_keys {
+                    for term in &traversed[key] {
+                        print!("{} ", term);
+                    }
+                    println!();
+                }
             }
             else {
                 println!("{:?}", ast);
@@ -443,6 +453,23 @@ fn gen_termdash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
             rhs: Box::new(factor_node),
         };
         gen_termdash(&node.children[2].clone().unwrap(), new_node)
+    }
+}
+
+fn bfs_traverse(root: &ASTNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+    match root {
+        ASTNode::Number(num) => {
+            traversed.entry(level).or_default().push(num.to_string());
+        }
+        ASTNode::Identifier(id) => {
+            traversed.entry(level).or_default().push(id.to_string());
+        }
+        ASTNode::binop{opr, lhs, rhs} => {
+            traversed.entry(level).or_default().push(opr.to_string());
+            bfs_traverse(&lhs, level + 1, traversed);
+            bfs_traverse(&rhs, level + 1, traversed);
+        }
+        // _ => println!("No ASTNode"),
     }
 }
 
