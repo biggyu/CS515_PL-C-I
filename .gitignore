@@ -22,3 +22,5 @@ target
 
 .DS_Store
 *.tar
+scanparse/scanparse
+first_compiler/first_compiler
