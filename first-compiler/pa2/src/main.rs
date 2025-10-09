@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::rc::Rc;
 use std::collections::{HashMap, HashSet};
 
 const PLUS: &str = "+";
@@ -34,6 +35,17 @@ enum ASTNode {
         opr: String,
         lhs: Box<ASTNode>,
         rhs: Box<ASTNode>,
+    },
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+enum DAGNode {
+    Number(usize),
+    Identifier(String),
+    binop {
+        opr: String,
+        lhs: (usize, Rc<DAGNode>),
+        rhs: (usize, Rc<DAGNode>),
     },
 }
 
@@ -103,6 +115,12 @@ fn main() {
                     }
                     println!();
                 }
+                // Directed Acyclic Representation
+                let mut value_nums: HashMap<DAGNode, usize> = HashMap::new();
+                let mut cur_valnum: usize = 0;
+                let mut dag_nodes: HashMap<usize, Rc<DAGNode>> = HashMap::new();
+                let dag = dag_rep(&root, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
+                println!("{:?}", dag);
             }
             else {
                 println!("{:?}", ast);
@@ -463,6 +481,35 @@ fn bfs_ats(root: &ASTNode, level: usize, traversed: &mut HashMap<usize, Vec<Stri
             bfs_ats(&rhs, level + 1, traversed);
         }
         // _ => println!("No ASTNode"),
+    }
+}
+
+fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
+    if let Some(&vn) = value_nums.get(&node) {
+        (vn, dag_nodes[&vn].clone())
+    }
+    else {
+        let rc_node = Rc::new(node.clone());
+        *cur_valnum += 1;
+        value_nums.insert(node.clone(), *cur_valnum);
+        dag_nodes.insert(*cur_valnum, rc_node.clone());
+        (*cur_valnum, rc_node)
+    }
+}
+
+fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
+    match root {
+        ASTNode::Number(num) => {
+            get_valnum(DAGNode::Number(*num), value_nums, cur_valnum, dag_nodes)
+        }
+        ASTNode::Identifier(id) => {
+            get_valnum(DAGNode::Identifier(id.to_string()), value_nums, cur_valnum, dag_nodes)
+        }
+        ASTNode::binop{opr, lhs, rhs} => {
+            let left = dag_rep(&lhs, value_nums, cur_valnum, dag_nodes);
+            let right = dag_rep(&rhs, value_nums, cur_valnum, dag_nodes);
+            get_valnum(DAGNode::binop{opr: opr.to_string(), lhs: left, rhs: right,}, value_nums, cur_valnum, dag_nodes)
+        }
     }
 }
 
