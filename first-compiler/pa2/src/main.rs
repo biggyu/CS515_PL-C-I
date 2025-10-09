@@ -91,12 +91,10 @@ fn main() {
         let parsed = ll1_parse(&mut tmp, &parse_table, &start_symbol);
         //TODO: print format
         if let Ok(root) = parsed {
-            // println!("{:?}", root);
             let ast = gen_ast(&root);
             if let Ok(root) = ast {
                 let mut traversed = HashMap::new();
-                println!("{:?}", root);
-                bfs_traverse(&root, 0, &mut traversed);
+                bfs_ats(&root, 0, &mut traversed);
                 let mut ordered_keys: Vec<_> = traversed.keys().into_iter().collect();
                 ordered_keys.sort_by(|x, y| x.cmp(&y));
                 for key in ordered_keys {
@@ -349,10 +347,7 @@ fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, String
             expression.remove(0);
         }
         else {
-            return Err(format!(
-                "Syntax error: expected '{}', got '{}'",
-                top, cur_token
-            ));
+            return Err(format!("Syntax error: expected '{}', got '{}'", top, cur_token));
         }
     }
     else {
@@ -369,7 +364,8 @@ fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, String
         if let Some(rule) = parse_table.get(&key) {
             for (index, token) in tokenize(&rule.rhs).iter().enumerate() {
                 if token != "EPSILON" {
-                    parse_root.children.push(ll1_parse(expression, &parse_table, &token.to_string()));
+                    let child = ll1_parse(expression, &parse_table, &token.to_string())?;
+                    parse_root.children.push(Ok(child));
                 }
                 else {
                     parse_root.children.push(Ok(ParseNode{token: "EPSILON".to_string(), value: None, children: Vec::new(),}));
@@ -377,10 +373,7 @@ fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, String
             }
         }
         else {
-            return Err(format!(
-                "No production rule for ({}, {}) in parse table",
-                top, cur_token
-            ));
+            return Err(format!("No production rule for ({}, {}) in parse table", top, cur_token));
         }
     }
     // for action in actions {
@@ -456,7 +449,7 @@ fn gen_termdash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
     }
 }
 
-fn bfs_traverse(root: &ASTNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+fn bfs_ats(root: &ASTNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
     match root {
         ASTNode::Number(num) => {
             traversed.entry(level).or_default().push(num.to_string());
@@ -466,8 +459,8 @@ fn bfs_traverse(root: &ASTNode, level: usize, traversed: &mut HashMap<usize, Vec
         }
         ASTNode::binop{opr, lhs, rhs} => {
             traversed.entry(level).or_default().push(opr.to_string());
-            bfs_traverse(&lhs, level + 1, traversed);
-            bfs_traverse(&rhs, level + 1, traversed);
+            bfs_ats(&lhs, level + 1, traversed);
+            bfs_ats(&rhs, level + 1, traversed);
         }
         // _ => println!("No ASTNode"),
     }
