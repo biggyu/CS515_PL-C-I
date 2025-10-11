@@ -105,12 +105,13 @@ fn main() {
         if let Ok(root) = parsed {
             let ast = gen_ast(&root);
             if let Ok(root) = ast {
-                let mut traversed = HashMap::new();
-                bfs_ats(&root, 0, &mut traversed);
-                let mut ordered_keys: Vec<_> = traversed.keys().into_iter().collect();
+                let mut ast_traversed = HashMap::new();
+                bfs_ats(&root, 0, &mut ast_traversed);
+                let mut ordered_keys: Vec<_> = ast_traversed.keys().into_iter().collect();
                 ordered_keys.sort_by(|x, y| x.cmp(&y));
+                println!("AST");
                 for key in ordered_keys {
-                    for term in &traversed[key] {
+                    for term in &ast_traversed[key] {
                         print!("{} ", term);
                     }
                     println!();
@@ -119,8 +120,20 @@ fn main() {
                 let mut value_nums: HashMap<DAGNode, usize> = HashMap::new();
                 let mut cur_valnum: usize = 0;
                 let mut dag_nodes: HashMap<usize, Rc<DAGNode>> = HashMap::new();
-                let dag = dag_rep(&root, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
-                println!("{:?}", dag);
+                let (_, dag) = dag_rep(&root, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
+                // println!("{:?}", dag);
+
+                let mut dag_traversed = HashMap::new();
+                bfs_dag(&*dag.clone(), 0, &mut dag_traversed);
+                ordered_keys = dag_traversed.keys().into_iter().collect();
+                ordered_keys.sort_by(|x, y| x.cmp(&y));
+                println!("DAG");
+                for key in ordered_keys {
+                    for term in &dag_traversed[key] {
+                        print!("{} ", term);
+                    }
+                    println!();
+                }
             }
             else {
                 println!("{:?}", ast);
@@ -510,6 +523,24 @@ fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum:
             let right = dag_rep(&rhs, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::binop{opr: opr.to_string(), lhs: left, rhs: right,}, value_nums, cur_valnum, dag_nodes)
         }
+    }
+}
+
+fn bfs_dag(root: &DAGNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+    match root {
+        DAGNode::Number(num) => {
+            traversed.entry(level).or_default().push(num.to_string());
+        }
+        DAGNode::Identifier(id) => {
+            traversed.entry(level).or_default().push(id.to_string());
+        }
+        DAGNode::binop{opr, lhs, rhs} => {
+            traversed.entry(level).or_default().push(opr.to_string());
+            let (_, left) = lhs;
+            let (_, right) = rhs;
+            bfs_dag(&*left.clone(), level + 1, traversed);
+            bfs_dag(&*right.clone(), level + 1, traversed);
+        } 
     }
 }
 
