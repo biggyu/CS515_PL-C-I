@@ -1,1 +1,2 @@
+intercept + slope * 5
 a + 2 * (b + c) + (b + c) * a
