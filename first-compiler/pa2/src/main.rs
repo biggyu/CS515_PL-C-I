@@ -55,12 +55,14 @@ fn main() {
     parse_table = gen_parse_table(&llrules, &firsts, &follows);
 
     for expression in expressions {
+        // parse tree
         let mut tmp = expression.iter().map(|s| s.to_string()).collect();
         let parsed = ll1_parse(&mut tmp, &parse_table, &start_symbol);
         //TODO: print format
         if let Ok(root) = parsed {
             let ast = gen_ast(&root);
             if let Ok(root) = ast {
+                // AST
                 let mut ast_traversed = HashMap::new();
                 bfs_ats(&root, 0, &mut ast_traversed);
                 let mut ordered_keys: Vec<_> = ast_traversed.keys().into_iter().collect();
@@ -89,6 +91,11 @@ fn main() {
                     }
                     println!();
                 }
+
+                //LLVM IR
+                let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
+                let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, Some("i64".to_string()), Some("foo".to_string()));
+                println!("{}", llvm_ir);
             }
             else {
                 println!("{:?}", ast);
