@@ -1,0 +1,13 @@
+AST
++ 
++ * 
+a * + a 
+2 + b c 
+b c 
+DAG
++ 
++ * 
+a * + a 
+2 + b c 
+b c 
+
