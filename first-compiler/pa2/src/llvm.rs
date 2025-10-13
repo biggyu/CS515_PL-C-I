@@ -22,7 +22,7 @@ pub fn gen_llvm_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, dag_
     llvm_ir.replace_range(llvm_ir.len() - 2..llvm_ir.len(), ") {\n");
     let mut ir = get_ir(root, temp_nums, &mut 0, func_type.clone(), &mut llvm_ir);
     // return temporary
-    llvm_ir = llvm_ir + &format!("\tret {} {}\n{}", &func_type.clone().unwrap_or_else(|| "i64".to_string()), ir, "}".to_string());
+    llvm_ir = llvm_ir + &format!("\tret {} {}\n{}\n", &func_type.clone().unwrap_or_else(|| "i64".to_string()), ir, "}".to_string());
     llvm_ir
 }
 

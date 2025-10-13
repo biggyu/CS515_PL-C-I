@@ -23,4 +23,4 @@ target
 .DS_Store
 *.tar
 scanparse/scanparse
-first_compiler/first_compiler
+first-compiler/first-compiler
