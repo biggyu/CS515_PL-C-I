@@ -14,11 +14,12 @@ use crate::llvm::*;
 
 use std::env;
 use std::fs;
+use std::io;
 use std::rc::Rc;
 use std::collections::{HashMap, HashSet};
 
 
-fn main() {
+fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let input_file = &args[1];
 
@@ -60,12 +61,23 @@ fn main() {
         let parsed = ll1_parse(&mut tmp, &parse_table, &start_symbol);
         //TODO: print format
         if let Ok(root) = parsed {
+            let mut parse_traversed = HashMap::new();
+            bfs_parse(&root, 0, &mut parse_traversed);
+            let mut ordered_keys: Vec<_> = parse_traversed.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     for term in &parse_traversed[key] {
+            //         print!("{} ", term);
+            //     }
+            //     println!();
+            // }
+
             let ast = gen_ast(&root);
             if let Ok(root) = ast {
                 // AST
                 let mut ast_traversed = HashMap::new();
                 bfs_ats(&root, 0, &mut ast_traversed);
-                let mut ordered_keys: Vec<_> = ast_traversed.keys().into_iter().collect();
+                ordered_keys = ast_traversed.keys().into_iter().collect();
                 ordered_keys.sort_by(|x, y| x.cmp(&y));
                 println!("AST");
                 for key in ordered_keys {
@@ -95,7 +107,8 @@ fn main() {
                 //LLVM IR
                 let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
                 let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, Some("i64".to_string()), Some("foo".to_string()));
-                println!("{}", llvm_ir);
+                fs::write("first.ll", &llvm_ir)?;
+                // println!("{}\nfirst.ll created successfully", llvm_ir);
             }
             else {
                 println!("{:?}", ast);
@@ -106,4 +119,5 @@ fn main() {
         }
         println!();
     }
+    Ok(())
 }

@@ -68,3 +68,22 @@ pub fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, St
     // }
     Ok(parse_root.clone())
 }
+
+pub fn bfs_parse(root: &ParseNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+    match &root.value {
+        Some(value) => {
+            match root.token.as_str() {
+                "+" => traversed.entry(level).or_default().push("PLUS".to_string()),
+                "*" => traversed.entry(level).or_default().push("STAR".to_string()),
+                _ => traversed.entry(level).or_default().push(format!("{}({})", &root.token, value.to_string())),
+            }
+            // traversed.entry(level).or_default().push(value.to_string())
+        },
+        None => traversed.entry(level).or_default().push(root.token.to_string()),
+    }
+    for child in &root.children {
+        if let Ok(node) = child {
+           bfs_parse(&node, level + 1, traversed);
+        }
+    }
+}
