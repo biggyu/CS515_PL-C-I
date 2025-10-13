@@ -80,16 +80,16 @@ fn main() {
         let parsed = ll1_parse(&mut tmp, &parse_table, &start_symbol);
         //TODO: print format
         if let Ok(root) = parsed {
-            //! traverse for err and print it only
-            println!("{:?}", root);
-            // let mut ordered_keys: Vec<_> = root.keys().into_iter().collect();
-            // ordered_keys.sort_by(|x, y| x.cmp(&y));
-            // for key in ordered_keys {
-            //     for term in &root[key] {
-            //         print!("{} ", term);
-            //     }
-            //     println!();
-            // }
+            let mut parse_traversed = HashMap::new();
+            bfs_parse(&root, 0, &mut parse_traversed);
+            let mut ordered_keys: Vec<_> = parse_traversed.keys().into_iter().collect();
+            ordered_keys.sort_by(|x, y| x.cmp(&y));
+            for key in ordered_keys {
+                for term in &parse_traversed[key] {
+                    print!("{} ", term);
+                }
+                println!();
+            }
         }
         else {
             println!("{:?}", parsed);
@@ -397,6 +397,26 @@ fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, String
     // }
     Ok(parse_root.clone())
 }
+
+fn bfs_parse(root: &ParseNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+    match &root.value {
+        Some(value) => {
+            match root.token.as_str() {
+                "+" => traversed.entry(level).or_default().push("PLUS".to_string()),
+                "*" => traversed.entry(level).or_default().push("STAR".to_string()),
+                _ => traversed.entry(level).or_default().push(format!("{}({})", &root.token, value.to_string())),
+            }
+            // traversed.entry(level).or_default().push(value.to_string())
+        },
+        None => traversed.entry(level).or_default().push(root.token.to_string()),
+    }
+    for child in &root.children {
+        if let Ok(node) = child {
+           bfs_parse(&node, level + 1, traversed);
+        }
+    }
+}
+
 // fn ll1_parse(expression: &Vec<String>, parse_table: &HashMap<(String, String), ProductionRule>, start_symbol: &str) -> Result<HashMap<usize, Vec<String>>, String> {
 //     let mut input = expression.clone();
 //     input.push("$".to_string());
