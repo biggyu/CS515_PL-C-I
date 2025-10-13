@@ -4,10 +4,8 @@
 EXECUTABLE="./first-compiler"
 
 for input_file in test*.exp; do
-    output_file1="${input_file%.exp}.astdag"
-    output_file2="${input_file%.exp}.ll"
-    $EXECUTABLE "$input_file" > "$output_file1"
-    mv first.ll $output_file2
+    output_file="${input_file%.exp}.astdag"
+    $EXECUTABLE "$input_file" > "$output_file"
 done
 
 echo " All tests completed."

@@ -107,7 +107,8 @@ fn main() -> io::Result<()> {
                 //LLVM IR
                 let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
                 let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, Some("i64".to_string()), Some("foo".to_string()));
-                fs::write("first.ll", &llvm_ir)?;
+                let output_file: Vec<_> = input_file.split(".").collect();
+                fs::write(format!("{}.ll", output_file[0]), &llvm_ir)?;
                 // println!("{}\nfirst.ll created successfully", llvm_ir);
             }
             else {
