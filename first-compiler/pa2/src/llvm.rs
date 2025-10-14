@@ -10,31 +10,38 @@ pub fn gen_llvm_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, dag_
     let mut params: HashMap<Rc<DAGNode>, String> = HashMap::new();
     // function name
     let mut llvm_ir = format!("define {} @{}(", func_type.clone().unwrap_or_else(|| "i64".to_string()), func_name.unwrap_or_else(|| "foo".to_string()));
+    let mut chk: bool = false;
     for node in dag_nodes.values() {
         match &**node {
             DAGNode::Identifier(id) => {
+                chk = true;
                 params.insert(node.clone(), format!("%{}", id));
                 llvm_ir = llvm_ir + &func_type.clone().unwrap_or_else(|| "i64".to_string()) + &format!(" %{}, ", id).to_string();
             }
             _ => {} 
         }
     }
-    llvm_ir.replace_range(llvm_ir.len() - 2..llvm_ir.len(), ") {\n");
+    if chk {
+        llvm_ir.replace_range(llvm_ir.len() - 2..llvm_ir.len(), ") {\n");
+    }
+    else {
+        llvm_ir = llvm_ir + &String::from(") {\n");
+    }
     let mut ir = get_ir(root, temp_nums, &mut 0, func_type.clone(), &mut llvm_ir);
     // return temporary
     llvm_ir = llvm_ir + &format!("\tret {} {}\n{}\n", &func_type.clone().unwrap_or_else(|| "i64".to_string()), ir, "}".to_string());
     llvm_ir
 }
 
-pub fn get_tempnum(node: DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize) -> usize {
+pub fn get_tempnum(node: DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize) -> (usize, bool) {
     if let Some(&vn) = temp_nums.get(&node) {
-        vn
+        (vn, false)
     }
     else {
         let rc_node = Rc::new(node.clone());
         *cur_valnum += 1;
         temp_nums.insert(node.clone(), *cur_valnum);
-        *cur_valnum
+        (*cur_valnum, true)
     }
 }
 
@@ -51,7 +58,7 @@ pub fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnu
             let (_, right) = rhs;
             let left_temp = get_ir(&*left.clone(), temp_nums, cur_valnum, func_type.clone(), llvm_ir);
             let right_temp = get_ir(&*right.clone(), temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            let tempnum = get_tempnum(root.clone(), temp_nums, cur_valnum);
+            let (tempnum, chk) = get_tempnum(root.clone(), temp_nums, cur_valnum);
             let mut opr_str = "";
             if opr == "+" {
                 opr_str = "add";
@@ -59,10 +66,11 @@ pub fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnu
             else {
                 opr_str = "mul";
             }
-            if tempnum >= *cur_valnum {
+            if chk {
                 *llvm_ir = llvm_ir.to_owned() + &format!("\t%t{} = {} {} {}, {}\n", tempnum, opr_str, func_type.clone().unwrap_or_else(|| "i64".to_string()), left_temp, right_temp);
             }
-            format!("%t{}", get_tempnum(root.clone(), temp_nums, cur_valnum))
+            format!("%t{}", tempnum)
+            // format!("%t{}", get_tempnum(root.clone(), temp_nums, cur_valnum))
         }
     }
 }

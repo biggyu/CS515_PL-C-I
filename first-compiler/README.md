@@ -46,7 +46,7 @@ sh run_tests.sh
 
 ## Compile LLVM IR
 
-To run the LLVM IR on x86-64, run test.c file with the ll file created.
+To run the LLVM IR on x86-64, run test.c file with the ll file created. If there is an error in the expression, the ll file will not be created.
 
 ```bash
 llc -march=x86-64 first.ll
