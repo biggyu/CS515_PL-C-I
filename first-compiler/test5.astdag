@@ -1,0 +1,13 @@
+AST
++ 
++ y 
++ x 
++ z 
+x y 
+DAG
++ 
++ y 
++ x 
++ z 
+x y 
+

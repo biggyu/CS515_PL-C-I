@@ -1,13 +1,9 @@
 AST
-+ 
-+ * 
-a * + a 
-2 + b c 
-b c 
+* 
++ c 
+a b 
 DAG
-+ 
-+ * 
-a * + a 
-2 + b c 
-b c 
+* 
++ c 
+a b 
 

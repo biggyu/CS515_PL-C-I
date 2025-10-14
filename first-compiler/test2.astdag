@@ -1,0 +1,9 @@
+AST
++ 
+a * 
+b c 
+DAG
++ 
+a * 
+b c 
+
