@@ -38,8 +38,20 @@ fn main() -> io::Result<()> {
     // }
 
     //Context Free Grammar
-    let start_symbol = "EXPR".to_string();
+    let start_symbol = "PROG".to_string();
     let mut rules: Vec<ProductionRule> = Vec::new();
+    rules.push(ProductionRule{lhs: String::from("PROG"), rhs: String::from("ARGDECL TYPEDECL STMTS RET")});
+    rules.push(ProductionRule{lhs: String::from("RET"), rhs: String::from("return IDENTIFIER ;")});
+    rules.push(ProductionRule{lhs: String::from("ARGDECL"), rhs: String::from("args IDENTIFIER ARGDECLTAIL")});
+    rules.push(ProductionRule{lhs: String::from("ARGDECLTAIL"), rhs: String::from("; | IDENTIFIER ARGDECLTAIL")});
+    rules.push(ProductionRule{lhs: String::from("TYPEDECL"), rhs: String::from("int IDENTIFIER TYPEDECLTAIL")});
+    rules.push(ProductionRule{lhs: String::from("TYPEDECLTAIL"), rhs: String::from("; | , IDENTIFIER TYPEDECLTAIL")});
+    rules.push(ProductionRule{lhs: String::from("STMTS"), rhs: String::from("STMT STMTS | EPSILON")});
+    rules.push(ProductionRule{lhs: String::from("STMT"), rhs: String::from("ASSIGN | IFTHENELSE | WHILE")});
+    rules.push(ProductionRule{lhs: String::from("ASSIGN"), rhs: String::from("IDENTIFIER = EXPR ;")});
+    rules.push(ProductionRule{lhs: String::from("IFTHENELSE"), rhs: String::from("if BOOL then { STMTS } else { STMTS }")});
+    rules.push(ProductionRule{lhs: String::from("WHILE"), rhs: String::from("while BOOL then { STMTS }")});
+    rules.push(ProductionRule{lhs: String::from("BOOL"), rhs: String::from("true | false | EXPR <= EXPR | EXPR < EXPR | EXPR >= EXPR | EXPR > EXPR | EXPR == EXPR")});
     rules.push(ProductionRule{lhs: String::from("EXPR"), rhs: String::from("EXPR + TERM | TERM")});
     rules.push(ProductionRule{lhs: String::from("TERM"), rhs: String::from("TERM * FACTOR | FACTOR")});
     rules.push(ProductionRule{lhs: String::from("FACTOR"), rhs: String::from("IDENTIFIER | NUMBER | (EXPR)")});

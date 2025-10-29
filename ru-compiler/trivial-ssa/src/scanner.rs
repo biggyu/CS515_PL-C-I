@@ -1,6 +1,6 @@
 
 pub fn is_terminal(sym: &str) -> bool {
-    let terminals = ["+", "*", "(", ")", "IDENTIFIER", "NUMBER"];
+    let terminals = ["+", "*", "(", ")", "=", "{", "}", ">", "<", ">=", "<=", "==", "IDENTIFIER", "NUMBER", "return", "args", ";", "int", ",", "if", "then", "else", "while", "true", "false"];
     terminals.contains(&sym)
 }
 
