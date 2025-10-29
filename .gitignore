@@ -24,3 +24,4 @@ target
 *.tar
 scanparse/scanparse
 first-compiler/first-compiler
+ru-compiler/ru-compiler
