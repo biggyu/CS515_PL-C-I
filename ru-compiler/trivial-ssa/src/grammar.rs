@@ -131,24 +131,40 @@ pub fn compute_follow(llrules: &Vec<ProductionRule>, firsts: &mut HashMap<String
 
             let a = &rule.lhs;
             let mut len: usize = 0;
-            if rhs.len() > 1 {
-                let a_follow = follow.get(a).cloned().unwrap_or_default();
-                let b_follow = follow.entry(rhs[1].clone()).or_default();
-    
-                len = b_follow.len();
-                
-                if rhs.len() == 2 {
-                    b_follow.extend(a_follow.iter().map(|s| s.to_string()));
-                }
-                else if rhs.len() == 3 {
-                    let beta_first = firsts.entry(rhs[2].clone()).or_default();
-                    b_follow.extend(beta_first.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
-                    if beta_first.contains("EPSILON") {
+
+            let a_follow = follow.get(a).cloned().unwrap_or_default();
+            for mut i in 0..=rhs.len() - 1 {
+                if !is_terminal(&rhs[i]) {
+                    let b_follow = follow.entry(rhs[i].clone()).or_default();
+                    len = b_follow.len();
+                    if i < rhs.len() - 1 {
+                        // let mut has_epsilon = true;
+                        let mut j = 1;
+                        while true {
+                            if i + j <= rhs.len() - 1 {
+                                let beta_first = firsts.entry(rhs[i + j].clone()).or_default();
+                                if beta_first.contains("EPSILON") {
+                                    b_follow.extend(beta_first.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
+                                    j += 1;
+                                }
+                                else {
+                                    b_follow.extend(beta_first.iter().map(|s| s.to_string()));
+                                    break;
+                                }
+                            }
+                            else {
+                                b_follow.extend(a_follow.iter().filter(|&t| t != "EPSILON").map(|s| s.to_string()));
+                                i += j;
+                                break;
+                            }
+                        }
+                    }
+                    else {
                         b_follow.extend(a_follow.iter().map(|s| s.to_string()));
                     }
-                }
-                if b_follow.len() > len {
-                    changed = true;
+                    if b_follow.len() > len {
+                        changed = true;
+                    }
                 }
             }
         }
