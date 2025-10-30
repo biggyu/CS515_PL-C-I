@@ -39,15 +39,19 @@ pub fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, St
     }
     else {
         let mut key = (String::new(), String::new());
-        if is_number(&cur_token) {
+        if is_terminal(&cur_token) {
+            key = (top.to_string(), cur_token.to_string());
+        }
+        else if is_number(&cur_token) {
             key = (top.to_string(), "NUMBER".to_string());
         }
         else if is_identifier(&cur_token) {
             key = (top.to_string(), "IDENTIFIER".to_string());
         }
-        else {
-            key = (top.to_string(), cur_token.to_string());
-        }
+        // else {
+        //     key = (top.to_string(), cur_token.to_string());
+        // }
+        println!("{:?} {:?}", key, parse_table.get(&key));
         if let Some(rule) = parse_table.get(&key) {
             for (_, token) in tokenize(&rule.rhs).iter().enumerate() {
                 if token != "EPSILON" {
