@@ -9,7 +9,7 @@ pub struct ProductionRule {
 
 pub fn elm_ambig(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut llrules = elm_leftRecursion(rules);
-    // llrules = elm_leftFactoring(&mut llrules);
+    llrules = elm_leftFactoring(&mut llrules);
     for rule in &mut llrules {
         for token in tokenize(&rule.rhs) {
             let tmp: String = token.clone();
@@ -56,18 +56,45 @@ pub fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule>
     rec_rules
 }
 
-//TODO: need implementation
 pub fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
-    let fac_rules: Vec<ProductionRule> = Vec::new();
-    for rule in rules {
-        let rule_rhs = rule.rhs.split("|");
-        // println!("{:?}", rule_rhs);
-        let mut alphas = Vec::new();
-        for elm in rule_rhs {
-            let tmp: Vec<_> = elm.split_whitespace().collect();
-            alphas.push(tmp[0]);
+    let mut fac_rules: Vec<ProductionRule> = Vec::new();
+    let mut lhs = String::new();
+    let mut rhs_alpha = String::new();
+    let mut alphas = Vec::new();
+    for rule in &mut *rules {
+        let alpha = tokenize(&rule.rhs)[0].clone();
+        if lhs == rule.lhs.to_string() && rhs_alpha == alpha {
+            if !alphas.contains(&(lhs.to_string(), alpha.to_string())) {
+                fac_rules.push(ProductionRule{lhs: rule.lhs.to_string(), rhs: alpha.clone() + " " + &rule.lhs.to_string() + "DASH"});
+                alphas.push((lhs.to_string(), alpha.to_string()));
+            }
+            let tmp1: Vec<_> = rule.rhs.split_whitespace().collect();
+            let tmp2: String = tmp1[1..].iter().map(|i| i.to_string() + " ").collect();
+            fac_rules.push(ProductionRule{lhs: rule.lhs.to_string() + "DASH", rhs: tmp2});
         }
-        // println!("alphas: {:?}", alphas);
+        else {
+            fac_rules.push(ProductionRule{lhs: rule.lhs.to_string(), rhs: rule.rhs.to_string()});
+            lhs = rule.lhs.to_string();
+            rhs_alpha = alpha;
+        }
+    }
+    // for alpha in alphas {
+    //     println!("{:?}", alpha);
+    // }
+    // for rule in &fac_rules {
+    //     println!("{:?}", rule);
+    // }
+    for alpha in alphas {
+        for mut rule in &mut fac_rules {
+            let rhs_alpha = tokenize(&rule.rhs)[0].clone();
+            if (rule.lhs.clone(), rhs_alpha.clone()) == alpha {
+                let tmp1: Vec<_> = rule.rhs.split_whitespace().collect();
+                let tmp2: String = tmp1[1..].iter().map(|i| i.to_string() + " ").collect();
+                rule.lhs = rule.lhs.to_string() + "DASH";
+                rule.rhs = tmp2;
+                break;
+            }
+        }
     }
     fac_rules
 }
@@ -184,6 +211,7 @@ pub fn gen_parse_table(llrules: &Vec<ProductionRule>, firsts: &HashMap<String, H
     let mut parse_table: HashMap<(String, String), ProductionRule> = HashMap::new();
 
     for rule in llrules {
+        println!("{:?}", rule);
         let rhs_token = tokenize(&rule.rhs);
         let mut rhs_first = HashSet::new();
         let mut eps_all = true;
