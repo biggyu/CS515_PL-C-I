@@ -16,6 +16,12 @@ pub fn tokenize(rhs: &str) -> Vec<String> {
     rhs.split_whitespace().map(|s| s.to_string()).collect()
 }
 
+pub fn separate_chars(s: &str) -> Vec<String> {
+    let mut sep = separate_brackets(&s);
+    sep = separate_semicolons(&s);
+    sep.split_whitespace().map(|s| s.to_string()).collect()
+}
+
 pub fn separate_brackets(s: &str) -> String {
     let mut tokens = String::new();
 
@@ -25,6 +31,21 @@ pub fn separate_brackets(s: &str) -> String {
             tokens.push(' ');
         }
         else if ch == ')' {
+            tokens.push(' ');
+            tokens.push(ch);
+        }
+        else {
+            tokens.push(ch);
+        }
+    }
+    tokens
+}
+
+pub fn separate_semicolons(s: &str) -> String {
+    let mut tokens = String::new();
+
+    for ch in s.chars() {
+        if ch == ';'{
             tokens.push(' ');
             tokens.push(ch);
         }
