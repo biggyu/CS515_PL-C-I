@@ -1,1 +1,12 @@
-((4 + 2) * 2) + 1
+args a;
+int b;
+b = 0;
+if a < 4 then
+{
+    b = 4;
+}
+else
+{
+    b = 6;
+}
+return b;

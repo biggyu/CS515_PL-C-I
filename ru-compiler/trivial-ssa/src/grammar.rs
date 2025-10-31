@@ -78,12 +78,6 @@ pub fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule>
             rhs_alpha = alpha;
         }
     }
-    // for alpha in alphas {
-    //     println!("{:?}", alpha);
-    // }
-    // for rule in &fac_rules {
-    //     println!("{:?}", rule);
-    // }
     for alpha in alphas {
         for mut rule in &mut fac_rules {
             let rhs_alpha = tokenize(&rule.rhs)[0].clone();
@@ -96,6 +90,9 @@ pub fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule>
             }
         }
     }
+    // for rule in &fac_rules {
+    //     println!("{} -> {}", rule.lhs, rule.rhs);
+    // }
     fac_rules
 }
 
@@ -211,7 +208,6 @@ pub fn gen_parse_table(llrules: &Vec<ProductionRule>, firsts: &HashMap<String, H
     let mut parse_table: HashMap<(String, String), ProductionRule> = HashMap::new();
 
     for rule in llrules {
-        println!("{:?}", rule);
         let rhs_token = tokenize(&rule.rhs);
         let mut rhs_first = HashSet::new();
         let mut eps_all = true;

@@ -51,7 +51,6 @@ pub fn ll1_parse(expression: &mut Vec<String>, parse_table: &HashMap<(String, St
         // else {
         //     key = (top.to_string(), cur_token.to_string());
         // }
-        println!("{:?} {:?}", key, parse_table.get(&key));
         if let Some(rule) = parse_table.get(&key) {
             for (_, token) in tokenize(&rule.rhs).iter().enumerate() {
                 if token != "EPSILON" {
