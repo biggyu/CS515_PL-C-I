@@ -6,31 +6,20 @@ pub enum ASTNode {
     Number(usize),
     Identifier(String),
     Boolean(bool),
-    Semicolon(String),
+    Return(Box<ASTNode>),
     Prog {
-        argdecl: Box<ASTNode>,
+        argdecl: Vec<ASTNode>,
         typedecl: Box<ASTNode>,
         stmts: Box<ASTNode>,
         ret: Box<ASTNode>,
     },
-    Return {
-        opr: String,
-        var: Box<ASTNode>,
-    },
-    ArgDecl {
-        opr: String,
-        var: Box<ASTNode>,
-        tail: Box<ASTNode>,
-    },
+    ArgDecl(Vec<ASTNode>),
     TypeDecl {
         var_type: String,
-        var: Box<ASTNode>,
-        tail: Box<ASTNode>,
+        vars: Vec<ASTNode>,
+
     },
-    Stmts {
-        stmt: Box<ASTNode>,
-        stmts: Box<ASTNode>,
-    },
+    Block(Vec<ASTNode>),
     Assign {
         var: Box<ASTNode>,
         val: Box<ASTNode>,
@@ -43,11 +32,6 @@ pub enum ASTNode {
     Whileloop {
         cond: Box<ASTNode>,
         block: Box<ASTNode>,
-    },
-    Relop {
-        opr: String,
-        lhs: Box<ASTNode>,
-        rhs: Box<ASTNode>,
     },
     Binop {
         opr: String,
@@ -63,71 +47,95 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
             let typedecl_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
             let stmts_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
             let ret_node = gen_ast(&parse_node.children[3].clone().unwrap())?;
-            Ok(ASTNode::Prog {
-                argdecl: Box::new(argdecl_node),
-                typedecl: Box::new(typedecl_node),
-                stmts: Box::new(stmts_node),
-                ret: Box::new(ret_node),
-            })
+            if let ASTNode::ArgDecl(list) = argdecl_node {
+                Ok(ASTNode::Prog {
+                    argdecl: list,
+                    typedecl: Box::new(typedecl_node),
+                    stmts: Box::new(stmts_node),
+                    ret: Box::new(ret_node),
+                })
+            }
+            else {
+                Err("Expected ArgDecl in ARGDECLTAIL".to_string())
+            }
         }
         "RET" => {
-            Ok(ASTNode::Return {
-                opr: parse_node.children[0].clone().unwrap().token,
-                var: Box::new(ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap())),
-            })
+            let var = ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap());
+            Ok(ASTNode::Return(Box::new(var)))
         }
         "ARGDECL" => {
+            let var = ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap());
             let argdecltail_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
-            Ok(ASTNode::ArgDecl {
-                opr: parse_node.children[0].clone().unwrap().token,
-                var: Box::new(ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap())),
-                tail: Box::new(argdecltail_node),
-            })
+            if let ASTNode::ArgDecl(mut list) = argdecltail_node {
+                list.insert(0, var);
+                Ok(ASTNode::ArgDecl(list))
+            }
+            else {
+                Err("Expected ArgDecl".to_string())
+            }
         }
         "ARGDECLTAIL" => {
             match parse_node.children[0].clone().unwrap().token.as_str() {
                 ";" => {
-                    Ok(ASTNode::Semicolon(";".to_string()))
+                    Ok(ASTNode::ArgDecl(Vec::new()))
                 }
                 _ => {
-                    let argdecltail_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
-                    Ok(ASTNode::ArgDecl {
-                        opr: "".to_string(),
-                        var: Box::new(ASTNode::Identifier(parse_node.children[0].clone().unwrap().value.clone().unwrap())),
-                        tail: Box::new(argdecltail_node),
-                    })
+                    let var = ASTNode::Identifier(parse_node.children[0].clone().unwrap().value.clone().unwrap());
+                    let argdecltail_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
+                    if let ASTNode::ArgDecl(mut list) = argdecltail_node {
+                        list.insert(0, var);
+                        Ok(ASTNode::ArgDecl(list))
+                    }
+                    else {
+                        Err("Expected ArgDecl".to_string())
+                    }
                 }
             }
         }
         "TYPEDECL" => {
+            let var = ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap());
             let typedecltail_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
-            Ok(ASTNode::TypeDecl {
-                var_type: parse_node.children[0].clone().unwrap().token,
-                var: Box::new(ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap())),
-                tail: Box::new(typedecltail_node),
-            })
-            // gen_typedecltail(&parse_node.children[0].clone().unwrap(), &parse_node.children[1].clone().unwrap(), &parse_node.children[2].clone().unwrap())
+            if let ASTNode::TypeDecl{var_type, mut vars} = typedecltail_node {
+                vars.insert(0, var);
+                Ok(ASTNode::TypeDecl{
+                    var_type: parse_node.children[0].clone().unwrap().token,
+                    vars: vars.clone()
+                })
+            }
+            else {
+                Err("Expected TypeDecl".to_string())
+            }
         }
         "TYPEDECLTAIL" => {
             match parse_node.children[0].clone().unwrap().token.as_str() {
                 ";" => {
-                    Ok(ASTNode::Semicolon(";".to_string()))
-                }
-                "," => {
-                    let typedecltail_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
-                    Ok(ASTNode::TypeDecl {
-                        var_type: ",".to_string(),
-                        var: Box::new(ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap())),
-                        tail: Box::new(typedecltail_node),
+                    // Ok(ASTNode::Semicolon(";".to_string()))
+                    Ok(ASTNode::TypeDecl{
+                        var_type: "".to_string(),
+                        vars: Vec::new(),
                     })
                 }
+                "," => {
+                    let var = ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap());
+                    let typedecltail_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
+                    if let ASTNode::TypeDecl{var_type, mut vars} = typedecltail_node {
+                        vars.insert(0, var);
+                        Ok(ASTNode::TypeDecl{
+                            var_type: var_type,
+                            vars: vars.clone()
+                        })
+                    }
+                    else {
+                        Err("Expected TypeDecl".to_string())
+                    }
+                }
                 _ => Err(format!(
-                    "Unidentified TYPEDECLTAIL rule {:?}", parse_node.children[1].clone().unwrap()
+                    "Unidentified TYPEDECLTAIL rule {:?} -> {:?}", parse_node.token, parse_node.children
                 )),
             }
         }
         "STMTS" => {
-            let stmt_node = gen_ast(&parse_node.children[0].clone().unwrap())?;
+            let mut stmt_node = gen_ast(&parse_node.children[0].clone().unwrap())?;
             gen_stmts(&parse_node.children[1].clone().unwrap(), stmt_node)
             // let stmts_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
             // Ok(ASTNode::Stmts {
@@ -136,7 +144,8 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
             // })
         }
         "STMT" => {
-            gen_ast(&parse_node.children[0].clone().unwrap())
+            let stmt_node = gen_ast(&parse_node.children[0].clone().unwrap())?;
+            Ok(ASTNode::Block(vec![stmt_node]))
         }
         "ASSIGN" => {
             let expr_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
@@ -215,17 +224,22 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
     }
 }
 
-fn gen_stmts(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> {
+fn gen_stmts(node: &ParseNode, mut inh_attr: ASTNode) -> Result<ASTNode, String> {
     if node.children.is_empty() || node.children[0].clone().unwrap().token == "EPSILON" {
         Ok(inh_attr)
     }
     else {
         let stmt_node = gen_ast(&node.children[0].clone().unwrap())?;
-        let new_node = ASTNode::Stmts {
-            stmt: Box::new(inh_attr),
-            stmts: Box::new(stmt_node),
-        };
-        gen_stmts(&node.children[1].clone().unwrap(), new_node)
+        if let ASTNode::Block(ref mut inh_list) = inh_attr {
+            if let ASTNode::Block(new_list) = stmt_node  {
+                inh_list.extend(new_list)
+            }
+        }
+        // let new_node = ASTNode::Stmts {
+        //     stmt: Box::new(inh_attr),
+        //     stmts: Box::new(stmt_node),
+        // };
+        gen_stmts(&node.children[1].clone().unwrap(), inh_attr)
     }
 }
 
@@ -233,7 +247,7 @@ fn gen_booldash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
     match node.children[0].clone().unwrap().value.clone().unwrap().as_str() {
         "<" => {
             let expr_node = gen_ast(&node.children[1].clone().unwrap())?;
-            Ok(ASTNode::Relop {
+            Ok(ASTNode::Binop {
                 opr: "<".to_string(),
                 lhs: Box::new(inh_attr),
                 rhs: Box::new(expr_node),
@@ -241,7 +255,7 @@ fn gen_booldash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
         }
         "<=" => {
             let expr_node = gen_ast(&node.children[1].clone().unwrap())?;
-            Ok(ASTNode::Relop {
+            Ok(ASTNode::Binop {
                 opr: "<=".to_string(),
                 lhs: Box::new(inh_attr),
                 rhs: Box::new(expr_node),
@@ -249,7 +263,7 @@ fn gen_booldash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
         }
         ">" => {
             let expr_node = gen_ast(&node.children[1].clone().unwrap())?;
-            Ok(ASTNode::Relop {
+            Ok(ASTNode::Binop {
                 opr: ">".to_string(),
                 lhs: Box::new(inh_attr),
                 rhs: Box::new(expr_node),
@@ -257,7 +271,7 @@ fn gen_booldash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
         }
         ">=" => {
             let expr_node = gen_ast(&node.children[1].clone().unwrap())?;
-            Ok(ASTNode::Relop {
+            Ok(ASTNode::Binop {
                 opr: ">=".to_string(),
                 lhs: Box::new(inh_attr),
                 rhs: Box::new(expr_node),
@@ -265,7 +279,7 @@ fn gen_booldash(node: &ParseNode, inh_attr: ASTNode) -> Result<ASTNode, String> 
         }
         "==" => {
             let expr_node = gen_ast(&node.children[1].clone().unwrap())?;
-            Ok(ASTNode::Relop {
+            Ok(ASTNode::Binop {
                 opr: "==".to_string(),
                 lhs: Box::new(inh_attr),
                 rhs: Box::new(expr_node),
