@@ -40,7 +40,7 @@ pub enum DAGNode {
     },
 }
 
-pub fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
+fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
     if let Some(&vn) = value_nums.get(&node) {
         (vn, dag_nodes[&vn].clone())
     }

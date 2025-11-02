@@ -10,19 +10,19 @@ pub struct ProductionRule {
 pub fn elm_ambig(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut llrules = elm_leftRecursion(rules);
     llrules = elm_leftFactoring(&mut llrules);
-    for rule in &mut llrules {
-        for token in tokenize(&rule.rhs) {
-            let tmp: String = token.clone();
-            if tmp.contains(&"(") || tmp.contains(&")") {
-                rule.rhs = separate_brackets(&tmp);
-            }
-        }
-    }
+    // for rule in &mut llrules {
+    //     for token in tokenize(&rule.rhs) {
+    //         let tmp: String = token.clone();
+    //         if tmp.contains(&"(") || tmp.contains(&")") {
+    //             rule.rhs = separate_brackets(&tmp);
+    //         }
+    //     }
+    // }
     
     llrules
 }
 
-pub fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
+fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut rec_rules: Vec<ProductionRule> = Vec::new();
     for rule in rules {
         let rule_rhs = rule.rhs.split("|");
@@ -56,7 +56,7 @@ pub fn elm_leftRecursion(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule>
     rec_rules
 }
 
-pub fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
+fn elm_leftFactoring(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut fac_rules: Vec<ProductionRule> = Vec::new();
     let mut lhs = String::new();
     let mut rhs_alpha = String::new();
