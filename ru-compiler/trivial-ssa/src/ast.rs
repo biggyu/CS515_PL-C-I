@@ -8,7 +8,7 @@ pub enum ASTNode {
     Boolean(bool),
     Return(Box<ASTNode>),
     Prog {
-        argdecl: Vec<ASTNode>,
+        argdecl: Box<ASTNode>,
         typedecl: Box<ASTNode>,
         stmts: Box<ASTNode>,
         ret: Box<ASTNode>,
@@ -47,17 +47,25 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
             let typedecl_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
             let stmts_node = gen_ast(&parse_node.children[2].clone().unwrap())?;
             let ret_node = gen_ast(&parse_node.children[3].clone().unwrap())?;
-            if let ASTNode::ArgDecl(list) = argdecl_node {
-                Ok(ASTNode::Prog {
-                    argdecl: list,
-                    typedecl: Box::new(typedecl_node),
-                    stmts: Box::new(stmts_node),
-                    ret: Box::new(ret_node),
-                })
-            }
-            else {
-                Err("Expected ArgDecl in ARGDECLTAIL".to_string())
-            }
+            // if let ASTNode::ArgDecl(list) = argdecl_node {
+            //     Ok(ASTNode::Prog {
+            //         argdecl: Box::new(argdecl_node),
+            //         // argdecl: list,
+            //         typedecl: Box::new(typedecl_node),
+            //         stmts: Box::new(stmts_node),
+            //         ret: Box::new(ret_node),
+            //     })
+            // }
+            // else {
+            //     Err("Expected ArgDecl in ARGDECLTAIL".to_string())
+            // }
+            Ok(ASTNode::Prog {
+                // argdecl: list,
+                argdecl: Box::new(argdecl_node),
+                typedecl: Box::new(typedecl_node),
+                stmts: Box::new(stmts_node),
+                ret: Box::new(ret_node),
+            })
         }
         "RET" => {
             let var = ASTNode::Identifier(parse_node.children[1].clone().unwrap().value.clone().unwrap());
@@ -166,7 +174,7 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
         }
         "WHILE" => {
             let bool_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
-            let stmts_node = gen_ast(&parse_node.children[5].clone().unwrap())?;
+            let stmts_node = gen_ast(&parse_node.children[4].clone().unwrap())?;
             Ok(ASTNode::Whileloop{
                 cond: Box::new(bool_node),
                 block: Box::new(stmts_node),

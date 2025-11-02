@@ -9,7 +9,7 @@ pub enum DAGNode {
     Boolean(bool),
     Return((usize, Rc<DAGNode>)),
     Prog {
-        argdecl: Vec<(usize, Rc<DAGNode>)>,
+        argdecl: (usize, Rc<DAGNode>),
         typedecl: (usize, Rc<DAGNode>),
         stmts: (usize, Rc<DAGNode>),
         ret: (usize, Rc<DAGNode>),
@@ -69,16 +69,16 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
             get_valnum(DAGNode::Return(var_dag), value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Prog{argdecl, typedecl, stmts, ret} => {
-            let mut argdecl_dags = Vec::new();
-            for arg in argdecl {
-                argdecl_dags.push(dag_rep(&arg, value_nums, cur_valnum, dag_nodes));
-            }
-            // let argdecl_dag = dag_rep(&argdecl, value_nums, cur_valnum, dag_nodes);
+            // let mut argdecl_dags = Vec::new();
+            // for arg in argdecl {
+            //     argdecl_dags.push(dag_rep(&arg, value_nums, cur_valnum, dag_nodes));
+            // }
+            let argdecl_dag = dag_rep(&argdecl, value_nums, cur_valnum, dag_nodes);
             let typedecl_dag = dag_rep(&typedecl, value_nums, cur_valnum, dag_nodes);
             let stmts_dag = dag_rep(&stmts, value_nums, cur_valnum, dag_nodes);
             let ret_dag = dag_rep(&ret, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Prog{
-                argdecl: argdecl_dags,
+                argdecl: argdecl_dag,
                 typedecl: typedecl_dag,
                 stmts: stmts_dag,
                 ret: ret_dag,
