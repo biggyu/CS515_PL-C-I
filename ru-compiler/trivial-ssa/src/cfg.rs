@@ -1,11 +1,11 @@
 use crate::ast::ASTNode;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug)]
 pub struct CFGNode {
-    id: usize,
-    inst: Vec<ASTNode>,
-    succ: Vec<usize>,
+    pub id: usize,
+    pub inst: Vec<ASTNode>,
+    pub succ: Vec<usize>,
 }
 
 pub fn gen_cfg(root: &ASTNode) -> HashMap<usize, CFGNode> {
@@ -204,4 +204,61 @@ pub fn compute_df(cfg: &HashMap<usize, CFGNode>, idom: &HashMap<usize, usize>) -
         }
     }
     df
+}
+
+pub fn insert_phi_nodes(cfg: &mut HashMap<usize, CFGNode>, idom: &HashMap<usize, usize>, df: &HashMap<usize, HashSet<usize>>) -> HashMap<usize, HashSet<String>> {
+    let mut def_sites: HashMap<String, HashSet<usize>> = HashMap::new();
+
+    for (node_id, node) in &mut *cfg {
+        for inst in &node.inst {
+            if let ASTNode::Assign { var, .. } = inst {
+                if let ASTNode::Identifier(name) = &**var {
+                    def_sites.entry(name.clone()).or_default().insert(*node_id);
+                }
+            }
+        }
+    }
+    // for key in def_sites.keys() {
+    //     println!("{} {:?}", key, def_sites[key]);
+    // }
+    let mut phi_nodes: HashMap<usize, HashSet<String>> = HashMap::new();
+
+    for (var, def_nodes) in &def_sites {
+        let mut worklist: VecDeque<usize> = def_nodes.iter().cloned().collect();
+        let mut visited: HashSet<String> = HashSet::new();
+
+        while let Some(n) = worklist.pop_front() {
+            for &df_node in &df[&n] {
+                if !phi_nodes.get(&df_node).map_or(false, |vars| vars.contains(var)) {
+                    phi_nodes.entry(df_node).or_default().insert(var.clone());
+
+                    if !def_nodes.contains(&df_node) {
+                        worklist.push_back(df_node);
+                    }
+                }
+            }
+        }
+    }
+    // for key in phi_nodes.keys() {
+    //     println!("{} {:?}", key, phi_nodes[key]);
+    // }
+
+    for (node_id, vars) in &phi_nodes {
+        let preds = cfg.iter().filter(|(_, node)| node.succ.contains(node_id)).map(|(id, _)| *id).collect::<Vec<_>>();
+    
+        for var in vars {
+            let sources = preds.iter().map(|pred| (var.clone(), *pred)).collect::<Vec<_>>();
+    
+            let phi_inst = ASTNode::Phi {
+                var: var.clone(),
+                src: sources,
+            };
+    
+            cfg.get_mut(node_id).unwrap().inst.insert(0, phi_inst);
+        }
+    }
+    // for key in cfg.keys() {
+    //     println!("{} {:?}", key, cfg[key]);
+    // }
+    phi_nodes
 }

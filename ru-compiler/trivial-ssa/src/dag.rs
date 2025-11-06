@@ -1,4 +1,5 @@
 use crate::ast::ASTNode;
+use crate::cfg::CFGNode;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -38,6 +39,10 @@ pub enum DAGNode {
         lhs: (usize, Rc<DAGNode>),
         rhs: (usize, Rc<DAGNode>),
     },
+    Phi {
+        var: String,
+        src: Vec<(String, usize)>,
+    }
 }
 
 fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
@@ -53,7 +58,7 @@ fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnu
     }
 }
 
-pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
+pub fn dag_from_ast(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
     match root {
         ASTNode::Number(num) => {
             get_valnum(DAGNode::Number(*num), value_nums, cur_valnum, dag_nodes)
@@ -65,18 +70,18 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
             get_valnum(DAGNode::Boolean(bool_val.clone()), value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Return(var) => {
-            let var_dag = dag_rep(&var, value_nums, cur_valnum, dag_nodes);
+            let var_dag = dag_from_ast(&var, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Return(var_dag), value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Prog{argdecl, typedecl, stmts, ret} => {
             // let mut argdecl_dags = Vec::new();
             // for arg in argdecl {
-            //     argdecl_dags.push(dag_rep(&arg, value_nums, cur_valnum, dag_nodes));
+            //     argdecl_dags.push(dag_from_ast(&arg, value_nums, cur_valnum, dag_nodes));
             // }
-            let argdecl_dag = dag_rep(&argdecl, value_nums, cur_valnum, dag_nodes);
-            let typedecl_dag = dag_rep(&typedecl, value_nums, cur_valnum, dag_nodes);
-            let stmts_dag = dag_rep(&stmts, value_nums, cur_valnum, dag_nodes);
-            let ret_dag = dag_rep(&ret, value_nums, cur_valnum, dag_nodes);
+            let argdecl_dag = dag_from_ast(&argdecl, value_nums, cur_valnum, dag_nodes);
+            let typedecl_dag = dag_from_ast(&typedecl, value_nums, cur_valnum, dag_nodes);
+            let stmts_dag = dag_from_ast(&stmts, value_nums, cur_valnum, dag_nodes);
+            let ret_dag = dag_from_ast(&ret, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Prog{
                 argdecl: argdecl_dag,
                 typedecl: typedecl_dag,
@@ -87,14 +92,14 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
         ASTNode::ArgDecl(vars) => {
             let mut vars_dag = Vec::new();
             for var in vars {
-                vars_dag.push(dag_rep(&var, value_nums, cur_valnum, dag_nodes));
+                vars_dag.push(dag_from_ast(&var, value_nums, cur_valnum, dag_nodes));
             }
             get_valnum(DAGNode::ArgDecl(vars_dag), value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::TypeDecl{var_type, vars} => {
             let mut vars_dag = Vec::new();
             for var in vars {
-                vars_dag.push(dag_rep(&var, value_nums, cur_valnum, dag_nodes));
+                vars_dag.push(dag_from_ast(&var, value_nums, cur_valnum, dag_nodes));
             }
             get_valnum(DAGNode::TypeDecl{
                 var_type: var_type.to_string(), 
@@ -102,25 +107,25 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
             }, value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Block(vecs) => {
-            // let stmt_dag = dag_rep(&stmt, value_nums, cur_valnum, dag_nodes);
+            // let stmt_dag = dag_from_ast(&stmt, value_nums, cur_valnum, dag_nodes);
             let mut vecs_dag = Vec::new();
             for vec in vecs {
-                vecs_dag.push(dag_rep(&vec, value_nums, cur_valnum, dag_nodes));
+                vecs_dag.push(dag_from_ast(&vec, value_nums, cur_valnum, dag_nodes));
             }
             get_valnum(DAGNode::Block(vecs_dag), value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Assign{var, val} => {
-            let var_dag = dag_rep(&var, value_nums, cur_valnum, dag_nodes);
-            let val_dag = dag_rep(&val, value_nums, cur_valnum, dag_nodes);
+            let var_dag = dag_from_ast(&var, value_nums, cur_valnum, dag_nodes);
+            let val_dag = dag_from_ast(&val, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Assign{
                 var: var_dag, 
                 val: val_dag,
             }, value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::IfThenElse{cond, true_block, false_block} => {
-            let cond_dag = dag_rep(&cond, value_nums, cur_valnum, dag_nodes);
-            let true_block_dag = dag_rep(&true_block, value_nums, cur_valnum, dag_nodes);
-            let false_block_dag = dag_rep(&false_block, value_nums, cur_valnum, dag_nodes);
+            let cond_dag = dag_from_ast(&cond, value_nums, cur_valnum, dag_nodes);
+            let true_block_dag = dag_from_ast(&true_block, value_nums, cur_valnum, dag_nodes);
+            let false_block_dag = dag_from_ast(&false_block, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::IfThenElse{
                 cond: cond_dag, 
                 true_block: true_block_dag, 
@@ -128,23 +133,44 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
             }, value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Whileloop{cond, block} => {
-            let cond_dag = dag_rep(&cond, value_nums, cur_valnum, dag_nodes);
-            let block_dag = dag_rep(&block, value_nums, cur_valnum, dag_nodes);
+            let cond_dag = dag_from_ast(&cond, value_nums, cur_valnum, dag_nodes);
+            let block_dag = dag_from_ast(&block, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Whileloop {
                 cond: cond_dag, 
                 block: block_dag,
             }, value_nums, cur_valnum, dag_nodes)
         }
         ASTNode::Binop{opr, lhs, rhs} => {
-            let lhs_dag = dag_rep(&lhs, value_nums, cur_valnum, dag_nodes);
-            let rhs_dag = dag_rep(&rhs, value_nums, cur_valnum, dag_nodes);
+            let lhs_dag = dag_from_ast(&lhs, value_nums, cur_valnum, dag_nodes);
+            let rhs_dag = dag_from_ast(&rhs, value_nums, cur_valnum, dag_nodes);
             get_valnum(DAGNode::Binop {
                 opr: opr.to_string(), 
                 lhs: lhs_dag, 
                 rhs: rhs_dag,
             }, value_nums, cur_valnum, dag_nodes)
         }
+        ASTNode::Phi{var, src} => {
+            get_valnum(DAGNode::Phi {
+                var: var.clone(),
+                src: src.clone(),
+            }, value_nums, cur_valnum, dag_nodes)
+        }
     }
+}
+
+pub fn dag_from_cfg(cfg: &HashMap<usize, CFGNode>, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> HashMap<usize, Rc<DAGNode>> {
+    let mut cfg_dags: HashMap<usize, Rc<DAGNode>> = HashMap::new();
+
+    for(&block_id, block) in cfg.iter() {
+        let mut block_dags = Vec::new();
+        for inst in &block.inst {
+            let dag = dag_from_ast(inst, value_nums, cur_valnum, dag_nodes);
+            block_dags.push(dag);
+        }
+        let (_, block_node) = get_valnum(DAGNode::Block(block_dags), value_nums, cur_valnum, dag_nodes);
+        cfg_dags.insert(block_id, block_node);
+    }
+    cfg_dags
 }
 
 //TODO: Need implementation

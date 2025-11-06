@@ -38,6 +38,10 @@ pub enum ASTNode {
         lhs: Box<ASTNode>,
         rhs: Box<ASTNode>,
     },
+    Phi {
+        var: String,
+        src: Vec<(String, usize)>,
+    }
 }
 
 pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
