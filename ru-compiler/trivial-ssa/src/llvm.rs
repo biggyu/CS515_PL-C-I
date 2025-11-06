@@ -162,7 +162,6 @@ fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &
             llvm_ir.push_str(&"\tbr label %while.cond\n\nwhile.end:\n");
             "\n".to_string()
         }
-        //TODO relational operations
         DAGNode::Binop{opr, lhs, rhs} => {
             // let mut binop = String::new();
             let (_, lhs_dag) = lhs;
