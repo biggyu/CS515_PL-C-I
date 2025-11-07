@@ -10,14 +10,9 @@ pub struct ProductionRule {
 pub fn elm_ambig(rules: &mut Vec<ProductionRule>) -> Vec<ProductionRule> {
     let mut llrules = elm_leftRecursion(rules);
     llrules = elm_leftFactoring(&mut llrules);
-    // for rule in &mut llrules {
-    //     for token in tokenize(&rule.rhs) {
-    //         let tmp: String = token.clone();
-    //         if tmp.contains(&"(") || tmp.contains(&")") {
-    //             rule.rhs = separate_brackets(&tmp);
-    //         }
-    //     }
-    // }
+    for rule in &mut llrules {
+        rule.rhs = separate_brackets(&rule.rhs);
+    }
     
     llrules
 }
