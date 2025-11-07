@@ -1,0 +1,14 @@
+title = "Generating the LLVM IR for our Language with Control Flow Statements"
+
+[package]
+name = "opt-ssa"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ru-compiler"
+path = "src/main.rs"
+
+
+[owner]
+name = "Seunggyu Lee"

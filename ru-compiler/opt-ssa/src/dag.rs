@@ -1,4 +1,5 @@
 use crate::ast::ASTNode;
+use crate::cfg::CFGNode;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -38,6 +39,10 @@ pub enum DAGNode {
         lhs: (usize, Rc<DAGNode>),
         rhs: (usize, Rc<DAGNode>),
     },
+    Phi {
+        var: String,
+        src: Vec<(String, usize)>,
+    }
 }
 
 fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
@@ -144,7 +149,28 @@ pub fn dag_from_ast(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cu
                 rhs: rhs_dag,
             }, value_nums, cur_valnum, dag_nodes)
         }
+        ASTNode::Phi{var, src} => {
+            get_valnum(DAGNode::Phi {
+                var: var.clone(),
+                src: src.clone(),
+            }, value_nums, cur_valnum, dag_nodes)
+        }
     }
+}
+
+pub fn dag_from_cfg(cfg: &HashMap<usize, CFGNode>, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> HashMap<usize, Rc<DAGNode>> {
+    let mut cfg_dags: HashMap<usize, Rc<DAGNode>> = HashMap::new();
+
+    for(&block_id, block) in cfg.iter() {
+        let mut block_dags = Vec::new();
+        for inst in &block.inst {
+            let dag = dag_from_ast(inst, value_nums, cur_valnum, dag_nodes);
+            block_dags.push(dag);
+        }
+        let (_, block_node) = get_valnum(DAGNode::Block(block_dags), value_nums, cur_valnum, dag_nodes);
+        cfg_dags.insert(block_id, block_node);
+    }
+    cfg_dags
 }
 
 //TODO: Need implementation

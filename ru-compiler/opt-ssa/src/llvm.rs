@@ -222,5 +222,8 @@ fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &
             llvm_ir.push_str(&format!("\t{} = {} {} {}, {}\n", result_tmp, opr_str, func_type.clone().unwrap_or_else(|| "i64".to_string()), lhs_ir, rhs_ir));
             result_tmp.to_string()
         }
+        DAGNode::Phi{var, src} => {
+            "".to_string()
+        }
     }
 }

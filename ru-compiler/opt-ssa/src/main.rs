@@ -3,6 +3,7 @@ mod grammar;
 mod parser;
 mod ast;
 mod dag;
+mod cfg;
 mod llvm;
 
 use crate::scanner::*;
@@ -10,6 +11,7 @@ use crate::grammar::*;
 use crate::parser::*;
 use crate::ast::*;
 use crate::dag::*;
+use crate::cfg::*;
 use crate::llvm::*;
 
 use std::env;
@@ -98,14 +100,52 @@ fn main() -> io::Result<()> {
             //     println!();
             // }
             // println!("{:?}", root);
+            // Control Flow Graph
+            let mut block_label = HashMap::new();
+            let mut cfg = gen_cfg(&root, &mut block_label);
+            // let mut ordered_keys: Vec<_> = cfg.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     println!("{} {:?}", key, cfg[key])
+            // }
+            // ordered_keys = block_label.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     println!("{} {:?}", key, block_label[key])
+            // }
+            let entry = 0;
+            let doms = compute_dom(&cfg, entry);
+            // let mut ordered_keys: Vec<_> = doms.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     println!("{} {:?}", key, doms[key]);
+            // }
+            let idom = compute_idom(&doms, entry);
+            // ordered_keys = idom.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     println!("{} {:?}", key, idom[key]);
+            // }
+            let df = compute_df(&cfg, &idom);
+            // ordered_keys = df.keys().into_iter().collect();
+            // ordered_keys.sort_by(|x, y| x.cmp(&y));
+            // for key in ordered_keys {
+            //     println!("{} {:?}", key, df[key]);
+            // }
+            let phi = insert_phi_nodes(&mut cfg, &idom, &df);
+            // for key in cfg.keys() {
+            //     println!("{} {:?}", key, cfg[key]);
+            // }
             
             // Directed Acyclic Representation
             let mut value_nums: HashMap<DAGNode, usize> = HashMap::new();
             let mut cur_valnum: usize = 0;
             let mut dag_nodes: HashMap<usize, Rc<DAGNode>> = HashMap::new();
             let (_, ast_dag) = dag_from_ast(&root, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
+            // let cfg_dags = dag_from_cfg(&cfg, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
             // println!("{:?}", ast_dag);
-            // let mut ordered_keys: Vec<_> = ast_dag.keys().into_iter().collect();
+            // // println!("{:?}", cfg_dags);
+            // let mut ordered_keys: Vec<_> = cfg_dags.keys().into_iter().collect();
             // ordered_keys.sort_by(|x, y| x.cmp(&y));
             // for key in ordered_keys {
             //     println!("{} {:?}", key, cfg_dags[key])
