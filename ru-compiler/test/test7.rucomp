@@ -1,0 +1,15 @@
+args a;
+int x;
+x = 0;
+if a > 0 then
+{
+while x < a then 
+{
+x = x + 1;
+}
+}
+else
+{
+x = 100;
+}
+return x;

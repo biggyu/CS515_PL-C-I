@@ -1,0 +1,8 @@
+args a;
+int x;
+x = 0;
+while x < 5 then
+{
+x = x + 1;
+}
+return x;

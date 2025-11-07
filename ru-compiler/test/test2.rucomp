@@ -1,0 +1,12 @@
+args a;
+int x;
+x = 3;
+if a < x then
+{
+x = a;
+}
+else
+{
+x = x + 1;
+}
+return x;

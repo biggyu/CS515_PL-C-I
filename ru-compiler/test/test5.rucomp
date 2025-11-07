@@ -1,0 +1,9 @@
+args a;
+int b, c;
+b = 1;
+while b < 4 then
+{
+c = c + a;
+b = b + 1;
+}
+return c;

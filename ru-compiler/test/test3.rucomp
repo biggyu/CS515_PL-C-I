@@ -1,0 +1,12 @@
+args a;
+int x;
+x = 10;
+if x >= 3 then
+{
+x = x + a; 
+}
+else
+{
+x = x * a; 
+}
+return x;
