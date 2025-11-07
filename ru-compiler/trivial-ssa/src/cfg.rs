@@ -8,19 +8,19 @@ pub struct CFGNode {
     pub succ: Vec<usize>,
 }
 
-pub fn gen_cfg(root: &ASTNode) -> HashMap<usize, CFGNode> {
+pub fn gen_cfg(root: &ASTNode, block_label: &mut HashMap<usize, String>) -> HashMap<usize, CFGNode> {
     let mut cfg: HashMap<usize, CFGNode> = HashMap::new();
     let mut id_counter = 0;
-    let entry_node = cfg_traverse(root, &mut cfg, &mut id_counter);
+    let entry_node = cfg_traverse(root, &mut cfg, &mut id_counter, block_label);
 
     cfg
 }
 
-fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &mut usize) -> (usize, usize) {
+fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &mut usize, block_label: &mut HashMap<usize, String>) -> (usize, usize) {
     match root {
         ASTNode::Prog{argdecl, typedecl, stmts, ret} => {
-            let (stmts_id, stmts_id_last) = cfg_traverse(&stmts, cfg, id_counter);
-            let (ret_id, ret_id_last) = cfg_traverse(&ret, cfg, id_counter);
+            let (stmts_id, stmts_id_last) = cfg_traverse(&stmts, cfg, id_counter, block_label);
+            let (ret_id, ret_id_last) = cfg_traverse(&ret, cfg, id_counter, block_label);
             // cfg.nodes.get_mut(&stmts_id).unwrap().succ.push(ret_id);
             cfg.get_mut(&stmts_id_last).unwrap().succ.push(ret_id);
             (stmts_id, ret_id_last)
@@ -29,7 +29,7 @@ fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &
             let mut first_id = None;
             let mut last_id = None;
             for (idx, stmt) in stmts.into_iter().enumerate() {
-                let (node_id, node_id_end) = cfg_traverse(&stmt, cfg, id_counter);
+                let (node_id, node_id_end) = cfg_traverse(&stmt, cfg, id_counter, block_label);
                 if let Some(prev_id) = last_id {
                     // cfg.nodes.get_mut(&prev_id).unwrap().succ.push(node_id);
                     // println!("{} {}", prev_id, node_id);
@@ -60,8 +60,11 @@ fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &
                 inst: vec![*cond.clone()],
                 succ: Vec::new(),
             };
-            let (true_block_id, true_block_id_last) = cfg_traverse(true_block, cfg, id_counter);
-            let (false_block_id, false_block_id_last) = cfg_traverse(false_block, cfg, id_counter);
+            block_label.insert(start_id, "if.cond".to_string());
+            let (true_block_id, true_block_id_last) = cfg_traverse(true_block, cfg, id_counter, block_label);
+            let (false_block_id, false_block_id_last) = cfg_traverse(false_block, cfg, id_counter, block_label);
+            block_label.insert(true_block_id, "if.then".to_string());
+            block_label.insert(false_block_id, "if.else".to_string());
             cond_node.succ.push(true_block_id);
             cond_node.succ.push(false_block_id);
             cfg.insert(start_id, cond_node);
@@ -72,6 +75,7 @@ fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &
                 inst: Vec::new(),
                 succ: Vec::new(),
             };
+            block_label.insert(end_id, "if.end".to_string());
             // cfg.get_mut(&true_block_id_last).unwrap().succ.push(end_id);
             cfg.get_mut(&true_block_id_last).unwrap().succ.push(end_id);
             // cfg.get_mut(&false_block_id_last).unwrap().succ.push(end_id);
@@ -87,7 +91,10 @@ fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &
                 inst: vec![*cond.clone()],
                 succ: Vec::new(),
             };
-            let (block_id, block_id_end) = cfg_traverse(block, cfg, id_counter);
+            block_label.insert(loop_id, "while.cond".to_string());
+            let (block_id, block_id_end) = cfg_traverse(block, cfg, id_counter, block_label);
+            block_label.insert(block_id, "while.body".to_string());
+            block_label.insert(block_id_end + 1, "while.end".to_string());
             cond_node.succ.push(block_id);
             // cfg.get_mut(&loop_id).unwrap().succ.push(block_id);
             cfg.get_mut(&block_id_end).unwrap().succ.push(loop_id);
@@ -102,6 +109,7 @@ fn cfg_traverse(root: &ASTNode, cfg: &mut HashMap<usize, CFGNode>, id_counter: &
                 inst: vec![root.clone()],
                 succ: Vec::new(),
             });
+            block_label.insert(id, "return".to_string());
             (id, id)
         }
         _ => {
