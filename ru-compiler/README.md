@@ -8,6 +8,17 @@ The scanner&parser reads expressions from an input file, parses them according t
 ## Project Structure
 ```
 ru-compiler/
+├── opt-ssa/ # Cargo project
+│ ├── src/
+│ │ ├── ast.rs
+│ │ ├── dag.rs
+│ │ ├── cfg.rs
+│ │ ├── grammar.rs
+│ │ ├── llvm.rs
+│ │ ├── main.rs
+│ │ ├── parser.rs
+│ │ └── scanner.rs
+│ └── Cargo.toml
 ├── trivial-ssa/ # Cargo project
 │ ├── src/
 │ │ ├── ast.rs
@@ -18,7 +29,8 @@ ru-compiler/
 │ │ ├── parser.rs
 │ │ └── scanner.rs
 │ └── Cargo.toml
-├── build.sh # Custom build script
+├── build_trv.sh # Custom build script for trivial-ssa
+├── build_opt.sh # Custom build script for opt-ssa
 ├── run_tests.sh # Custom test run script
 ├── test1.c # Support code to run corresponding test1.rucomp file
 ├── test1.rucomp # Input expression test files
