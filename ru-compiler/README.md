@@ -60,7 +60,7 @@ sh run_tests.sh
 To run the LLVM IR on x86-64, run test.c file with the ll file created. If there is an error in the expression, the ll file will not be created.
 
 ```bash
-clang -c first.ll =o first.o
-clang test.c first.s -o test.out
+clang -c first.ll -o first.o
+clang test.c first.o -o test.out
 ./test.out
 ```
