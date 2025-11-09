@@ -142,11 +142,13 @@ fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &
             let (_, true_block_dag) = true_block;
             let (_, false_block_dag) = false_block;
             let cond_ir = get_ir(&*cond_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            llvm_ir.push_str(&format!("\tbr i1 {}, label %if.then, label %if.else\n\nif.then:\n", cond_ir));
+            let label_num = *cur_valnum;
+            *cur_valnum += 1;
+            llvm_ir.push_str(&format!("\tbr i1 {}, label %if{}.then, label %if{}.else\n\nif{}.then:\n", cond_ir, label_num, label_num, label_num));
             let _ = get_ir(&*true_block_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            llvm_ir.push_str(&"\tbr label %if.end\n\nif.else:\n");
+            llvm_ir.push_str(&format!("\tbr label %if{}.end\n\nif{}.else:\n", label_num, label_num));
             let _ = get_ir(&*false_block_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            llvm_ir.push_str(&"\tbr label %if.end\n\nif.end:\n");
+            llvm_ir.push_str(&format!("\tbr label %if{}.end\n\nif{}.end:\n", label_num, label_num));
             // llvm_ir.push_str(&format!("{}\n", cond_ir));
             // llvm_ir.push_str(&format!("{}\n", true_block_ir));
             "\n".to_string()
@@ -157,12 +159,14 @@ fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &
             let (_, block_dag) = block;
             // let cond_ir = get_ir(&*cond_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
             // let block_ir = get_ir(&*block_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            llvm_ir.push_str(&"\tbr label %while.cond\n\nwhile.cond:\n");
+            let label_num = *cur_valnum;
+            *cur_valnum += 1;
+            llvm_ir.push_str(&format!("\tbr label %while{}.cond\n\nwhile{}.cond:\n", label_num, label_num));
             let cond_ir = get_ir(&*cond_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
             // llvm_ir.push_str(&format!("{}\n", block_ir));
-            llvm_ir.push_str(&format!("\tbr i1 {}, label %while.body, label %while.end\n\nwhile.body:\n", cond_ir));
+            llvm_ir.push_str(&format!("\tbr i1 {}, label %while{}.body, label %while{}.end\n\nwhile{}.body:\n", cond_ir, label_num, label_num, label_num));
             let _ = get_ir(&*block_dag, temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            llvm_ir.push_str(&"\tbr label %while.cond\n\nwhile.end:\n");
+            llvm_ir.push_str(&format!("\tbr label %while{}.cond\n\nwhile{}.end:\n", label_num, label_num));
             "\n".to_string()
         }
         DAGNode::Binop{opr, lhs, rhs} => {
