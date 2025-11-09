@@ -24,7 +24,7 @@ pub fn separate_chars(s: &str) -> Vec<String> {
     
 }
 
-fn separate_brackets(s: &str) -> String {
+pub fn separate_brackets(s: &str) -> String {
     let mut tokens = String::new();
 
     for ch in s.chars() {
