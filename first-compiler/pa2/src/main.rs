@@ -93,7 +93,8 @@ fn main() -> io::Result<()> {
                 let (_, dag) = dag_rep(&root, &mut value_nums, &mut cur_valnum, &mut dag_nodes);
 
                 let mut dag_traversed = HashMap::new();
-                bfs_dag(&*dag.clone(), 0, &mut dag_traversed);
+                let mut vars = String::new();
+                bfs_dag(&*dag.clone(), 0, &mut dag_traversed, &mut vars);
                 ordered_keys = dag_traversed.keys().into_iter().collect();
                 ordered_keys.sort_by(|x, y| x.cmp(&y));
                 println!("DAG");
@@ -106,7 +107,7 @@ fn main() -> io::Result<()> {
 
                 //LLVM IR
                 let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
-                let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, Some("i64".to_string()), Some("foo".to_string()));
+                let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, &vars, Some("i64".to_string()), Some("foo".to_string()));
                 let output_file: Vec<_> = input_file.split(".").collect();
                 fs::write(format!("{}.ll", output_file[0]), &llvm_ir)?;
                 // println!("{}\nfirst.ll created successfully", llvm_ir);

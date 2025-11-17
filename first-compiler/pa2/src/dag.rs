@@ -42,20 +42,21 @@ pub fn dag_rep(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cur_val
     }
 }
 
-pub fn bfs_dag(root: &DAGNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>) {
+pub fn bfs_dag(root: &DAGNode, level: usize, traversed: &mut HashMap<usize, Vec<String>>, vars: &mut String) {
     match root {
         DAGNode::Number(num) => {
             traversed.entry(level).or_default().push(num.to_string());
         }
         DAGNode::Identifier(id) => {
+            vars.push_str(&format!("{},", id));
             traversed.entry(level).or_default().push(id.to_string());
         }
         DAGNode::Binop{opr, lhs, rhs} => {
             traversed.entry(level).or_default().push(opr.to_string());
             let (_, left) = lhs;
             let (_, right) = rhs;
-            bfs_dag(&*left.clone(), level + 1, traversed);
-            bfs_dag(&*right.clone(), level + 1, traversed);
+            bfs_dag(&*left.clone(), level + 1, traversed, vars);
+            bfs_dag(&*right.clone(), level + 1, traversed, vars);
         } 
     }
 }

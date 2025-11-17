@@ -6,19 +6,15 @@ use std::rc::Rc;
 //     pub value_num: usize,
 
 // }
-pub fn gen_llvm_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, dag_nodes: &HashMap<usize, Rc<DAGNode>>, func_type: Option<String>, func_name: Option<String>) -> String {
-    let mut params: HashMap<Rc<DAGNode>, String> = HashMap::new();
+pub fn gen_llvm_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, dag_nodes: &HashMap<usize, Rc<DAGNode>>, vars: &String, func_type: Option<String>, func_name: Option<String>) -> String {
     // function name
     let mut llvm_ir = format!("define {} @{}(", func_type.clone().unwrap_or_else(|| "i64".to_string()), func_name.unwrap_or_else(|| "foo".to_string()));
     let mut chk: bool = false;
-    for node in dag_nodes.values() {
-        match &**node {
-            DAGNode::Identifier(id) => {
-                chk = true;
-                params.insert(node.clone(), format!("%{}", id));
-                llvm_ir = llvm_ir + &func_type.clone().unwrap_or_else(|| "i64".to_string()) + &format!(" %{}, ", id).to_string();
-            }
-            _ => {} 
+    for var in vars.split(",") {
+        // params.insert(node.clone(), format!("%{}", var));
+        if var != "" {
+            chk = true;
+            llvm_ir.push_str(&format!("{} %{}, ", func_type.clone().unwrap_or_else(|| "i64".to_string()), var))
         }
     }
     if chk {
