@@ -8,4 +8,6 @@ DAG
 42 * 
 5 + 
 x 1 
+define i64 @foo(i64 %x) {
+
 

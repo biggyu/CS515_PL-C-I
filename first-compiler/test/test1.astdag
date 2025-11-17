@@ -1,0 +1,11 @@
+AST
+* 
++ c 
+a b 
+DAG
+* 
++ c 
+a b 
+define i64 @foo(i64 %a, i64 %b, i64 %c) {
+
+

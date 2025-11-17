@@ -1,4 +1,4 @@
-define i64 @foo(i64 %c, i64 %a, i64 %b) {
+define i64 @foo(i64 %a, i64 %b, i64 %c, i64 %b, i64 %c, i64 %a, i64 %b, i64 %c, i64 %a, i64 %a) {
 	%t1 = add i64 %a, 2
 	%t2 = add i64 %b, %c
 	%t3 = mul i64 %t2, 2
