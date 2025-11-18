@@ -1,5 +1,5 @@
-
 use std::collections::HashMap;
+
 pub fn gen_x86(llvm_ir: &String) -> String {
     let mut assembly_code = String::new();
     let mut lines = llvm_ir.split("\n");
@@ -39,15 +39,55 @@ pub fn gen_x86(llvm_ir: &String) -> String {
             }
             if tokens[4].contains("%") {
                 dest = args[&tokens[4][..tokens[4].len()-1]].to_string();
-                src = args[tokens[5]].to_string();
+                if dest == "%rax" || dest == "%r10" {
+                    assembly_code.push_str("\tpopq %r10\n");
+                    dest = "%r10".to_string();
+                }
+                if tokens[5].contains("%") {
+                    src = args[tokens[5]].to_string();
+                    if src == "%rax" || src == "%r10" {
+                        assembly_code.push_str(&format!("\tpopq %rax\n"));
+                        assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+                        assembly_code.push_str(&format!("\tpushq {}\n", dest));
+                    }
+                    else {
+                        if dest == "%rax" || dest == "%r10" {
+                            let tmp = src;
+                            src = dest;
+                            dest = tmp;
+                        }
+                        assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+                    }
+                }
+                else {
+                    src = format!("${}", tokens[5].to_string());
+                    assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+                }
             }
             else {
-                dest = args[tokens[5]].to_string();
                 src = format!("${}", tokens[4][..tokens[4].len()-1].to_string());
+                if tokens[5].contains("%") {
+                    dest = args[tokens[5]].to_string();
+                    if dest == "%rax" || dest == "%r10" {
+                        assembly_code.push_str(&format!("\tpopq %rax\n"));
+                        assembly_code.push_str(&format!("\t{} {}, %rax\n", inst, src));
+                        assembly_code.push_str(&format!("\tpushq %rax\n"));
+                    }
+                    else {
+                        assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+                    }
+                }
+                else {
+                    // src = "%rax".to_string();
+                    dest = "%rax".to_string();
+                    assembly_code.push_str(&format!("\tmovq {}, {}\n", src, dest));
+                    assembly_code.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
+                    assembly_code.push_str(&format!("\tpushq {}\n", dest))
+                }
                 // args.insert(tokens[0].to_string(), &dest.clone());
             }
             args.insert(tokens[0].to_string(), dest.clone());
-            assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+            // assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
         }
         else if tokens.len() > 1 {
             assembly_code.push_str(&format!("\tmovq {}, %rax\n", args[tokens[2]]));

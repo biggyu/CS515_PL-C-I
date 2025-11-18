@@ -111,7 +111,7 @@ fn main() -> io::Result<()> {
                 //LLVM IR
                 let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
                 let llvm_ir = gen_llvm_ir(&*dag.clone(), &mut temp_nums, &dag_nodes, &args, Some("i64".to_string()), Some("foo".to_string()));
-                // println!("{}", llvm_ir);
+                println!("{}", llvm_ir);
                 // let output_file: Vec<_> = input_file.split(".").collect();
                 // fs::write(format!("{}.ll", output_file[0]), &llvm_ir)?;
 
