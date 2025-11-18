@@ -1,0 +1,14 @@
+title = "Generating x86-64 code for first-compiler expression language"
+
+[package]
+name = "first"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rucompiler-x86-first"
+path = "src/main.rs"
+
+
+[owner]
+name = "Seunggyu Lee"

@@ -1,0 +1,14 @@
+title = "Generating x86-64 code for ru-compiler expression language"
+
+[package]
+name = "second"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rucompiler-x86-second"
+path = "src/main.rs"
+
+
+[owner]
+name = "Seunggyu Lee"

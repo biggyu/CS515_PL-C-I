@@ -25,3 +25,5 @@ target
 scanparse/scanparse
 first-compiler/first-compiler
 ru-compiler/ru-compiler
+rucompiler-x86/rucompiler-x86-first
+rucompiler-x86/rucompiler-x86-second
