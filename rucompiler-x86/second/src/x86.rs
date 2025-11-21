@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::iter::Peekable;
 
 pub fn gen_x86(llvm_ir: &String) -> String {
     let mut assembly_code = String::new();
@@ -25,10 +26,15 @@ pub fn gen_x86(llvm_ir: &String) -> String {
             // println!("{:?}", args);
         }
     }
+    let mut rsp: usize = 0;
+    let mut buffer = None;
+    let mut ifthen = String::new();
+    let mut ifelse = String::new();
+    let mut whilecond = String::new();
+    let mut whilebody = String::new();
     while let Some(line) = lines.next() {
         if line.starts_with("entry:") {
-            let mut rsp = 0;
-            let mut buffer = None;
+            // let mut rsp = 0;
             while let Some(inner_line) = lines.next() {
                 if !inner_line.ends_with("alloca i64") {
                     buffer = Some(inner_line);
@@ -39,162 +45,266 @@ pub fn gen_x86(llvm_ir: &String) -> String {
                 args.insert(tokens[0].to_string(), format!("-{}(%rbp)", rsp));
             }
             assembly_code.push_str(&format!("\tsubq ${}, %rsp\n", rsp));
-            while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
-                if !inner_line.starts_with("\tstore") {
-                    buffer = Some(inner_line);
-                    break;
-                }
-                let tmp = inner_line.replace(",", "");
-                let mut tokens: Vec<_> = tmp.split_whitespace().collect();
-                if tokens[2].contains("%") {
-                    assembly_code.push_str(&format!("\tmovq {}, {}\n", args[tokens[2]], args[tokens[4]]));
-                }
-                else {
-                    // let value = &tokens[2][..end];
-                    assembly_code.push_str(&format!("\tmovq ${}, {}\n", tokens[2], args[tokens[4]]));
-                }
-            }
+            // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+            //     if !inner_line.starts_with("\tstore") {
+            //         buffer = Some(inner_line);
+            //         break;
+            //     }
+            //     gen_x86_stmts(&mut args, inner_line, &mut lines, &mut assembly_code);
+            //     // let tmp = inner_line.replace(",", "");
+            //     // let mut tokens: Vec<_> = tmp.split_whitespace().collect();
+            //     // if tokens[2].contains("%") {
+            //     //     assembly_code.push_str(&format!("\tmovq {}, {}\n", args[tokens[2]], args[tokens[4]]));
+            //     // }
+            //     // else {
+            //     //     // let value = &tokens[2][..end];
+            //     //     assembly_code.push_str(&format!("\tmovq ${}, {}\n", tokens[2], args[tokens[4]]));
+            //     // }
+            // }
             while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
                 if !inner_line.starts_with("\t") {
                     buffer = Some(inner_line);
                     break;
                 }
-                let tmp = inner_line.replace(",", "");
-                let mut tokens: Vec<_> = tmp.split_whitespace().collect();
-                if inner_line.starts_with("\t%") {
-                    if inner_line.contains("= load") {
-                        assembly_code.push_str(&format!("\tmovq {}, %rbx\n", args[tokens[5]]));
-                        args.insert(tokens[0].to_string(), "%rbx".to_string());
-                        if let Some(operand) = lines.peek() {
-                            if operand.starts_with("\t%") && operand.contains("= load") {
-                                tokens = operand.split_whitespace().collect();
-                                assembly_code.push_str(&format!("\tmovq {}, %rax\n", args[tokens[5]]));
-                                assembly_code.push_str("\tpushq %rax\n");
-                                args.insert(tokens[0].to_string(), "%rax".to_string());
-                                lines.next();
-                            }
-                        }
-                        assembly_code.push_str("\tpushq %rbx\n");
-                    }
-                    else if inner_line.contains("= mul") || inner_line.contains("= add") {
-                        let mut src = String::new();
-                        let mut dest = String::new();
-                        let inst = format!("{}q", tokens[2]);
-                        if tokens[4].contains("%") {
-                            src = "%r10".to_string();
-                            assembly_code.push_str(&format!("\tpopq {}\n", src));
-                            if tokens[5].contains("%") {
-                                dest = "%r11".to_string();
-                                assembly_code.push_str(&format!("\tpopq {}\n", dest));
-                            }
-                            else {
-                                let tmp = src;
-                                src = format!("${}", tokens[5]);
-                                dest = tmp;
-                            }
-                        }
-                        else {
-                            src = format!("${}", tokens[4]);
-                            if tokens[5].contains("%") {
-                                dest = "%r11".to_string();
-                                assembly_code.push_str(&format!("\tpopq {}\n", dest));
-                            }
-                            else {
-                                dest = "%r11".to_string();
-                                assembly_code.push_str(&format!("\tmovq {}, {}\n", src, dest));
-                                src = format!("${}", tokens[5]);
-                                // assembly_code.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
-                                // assembly_code.push_str(&format!("\tpushq {}\n", dest))
-                                // dest = format!("${}", tokens[5]);
-                            }
-                        }
-                        assembly_code.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
-                        assembly_code.push_str(&format!("\tpushq {}\n", dest));
-                        args.insert(tokens[0].to_string(), dest.to_string());
-                    }
-                    // else if inner_line.contains("= add") {
-                    //     assembly_code.push_str(&format!("\taddq {}, {}\n", ,args[tokens[5]]));
-                    // }
-                    else if inner_line.contains("= icmp") {
-                        let mut lhs = String::new();
-                        let mut rhs = String::new();
-                        if tokens[5].contains("%") {
-                            if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
-                                assembly_code.push_str(&format!("\tpopq {}\n", args[tokens[5]].clone()));
-                            }
-                            lhs = args[tokens[5]].clone();
-                        }
-                        else {
-                            lhs = format!("${}",tokens[5].to_string());
-                        }
-                        if tokens[6].contains("%") {
-                            if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
-                                assembly_code.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
-                            }
-                            rhs = args[tokens[6]].clone();
-                        }
-                        else {
-                            rhs = format!("${}",tokens[6].to_string());
-                        }
-                        assembly_code.push_str(&format!("\tcmpq {}, {}\n", lhs, rhs));
-                        match tokens[3] {
-                            "ult" => args.insert(tokens[0].to_string(), "jb".to_string()),
-                            "ule" => args.insert(tokens[0].to_string(), "jbe".to_string()),
-                            "ugt" => args.insert(tokens[0].to_string(), "ja".to_string()),
-                            "uge" => args.insert(tokens[0].to_string(), "jae".to_string()),
-                            "eq" => args.insert(tokens[0].to_string(), "je".to_string()),
-                            "ne" => args.insert(tokens[0].to_string(), "jne".to_string()),
-                            _ => args.insert(tokens[0].to_string(), "je".to_string()),
-                        };
-                    }
-                }
-                else if inner_line.starts_with("\tstore") {
-                    assembly_code.push_str(&format!("\tpopq {}\n", args[tokens[2]].to_string()));
-                    assembly_code.push_str(&format!("\tmovq {}, {}\n", args[tokens[2]].to_string(), args[tokens[4]]));
-                }
-                else if inner_line.starts_with("\tbr i1") {
-                    let mut label = tokens[4].replace(".", "");
-                    label = label.replace("%", "");
-                    assembly_code.push_str(&format!("\t{} {}\n", args[tokens[2]], label));
-                }
+                assembly_code.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
             }
         }
         else if line.starts_with("if") {
-            if line.ends_with("else:") {
-                
-            }
             if line.ends_with("then:") {
-
+                ifthen = String::new();
+                let mut label = line.replace(".", "");
+                label = label.replace("%", "");
+                ifthen.push_str(&format!("{}\n", label));
+                // assembly_code.push_str(&format!("{}\n", label));
+                while let Some(inner_line) = lines.next() {
+                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if inner_line.starts_with("\tbr") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    ifthen.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
+            }
+            if line.ends_with("else:") {
+                // let mut label = line.replace(".", "");
+                // label = label.replace("%", "");
+                // assembly_code.push_str(&format!("{}\n", label));
+                ifelse = String::new();
+                while let Some(inner_line) = lines.next() {
+                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if !inner_line.starts_with("\t") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    ifelse.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
             }
             if line.ends_with("end:") {
-
+                assembly_code.push_str("\n");
+                assembly_code.push_str(&ifelse);
+                assembly_code.push_str("\n");
+                assembly_code.push_str(&ifthen);
+                assembly_code.push_str("\n");
+                let mut label = line.replace(".", "");
+                label = label.replace("%", "");
+                assembly_code.push_str(&format!("{}\n", label));
+                while let Some(inner_line) = lines.next() {
+                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if !inner_line.starts_with("\t") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    assembly_code.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
             }
         }
         else if line.starts_with("while") {
             if line.ends_with("cond:") {
-
-            }
-            if line.ends_with("end:") {
-
+                whilecond = String::new();
+                let mut label = line.replace(".", "");
+                label = label.replace("%", "");
+                whilecond.push_str(&format!("{}\n", label));
+                while let Some(inner_line) = lines.next() {
+                    // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if !inner_line.starts_with("\t") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    whilecond.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
             }
             if line.ends_with("body:") {
-                
+                whilebody = String::new();
+                let mut label = line.replace(".", "");
+                label = label.replace("%", "");
+                whilebody.push_str(&format!("{}\n", label));
+                while let Some(inner_line) = lines.next() {
+                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if !inner_line.starts_with("\t") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    whilebody.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
+            }
+            if line.ends_with("end:") {
+                // let mut label = line.replace(".", "");
+                // label = label.replace("%", "");
+                // assembly_code.push_str(&format!("{}:\n", label));
+                assembly_code.push_str("\n");
+                assembly_code.push_str(&whilecond);
+                assembly_code.push_str("\n");
+                while let Some(inner_line) = lines.next() {
+                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+                    if !inner_line.starts_with("\t") {
+                        buffer = Some(inner_line);
+                        break;
+                    }
+                    assembly_code.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                }
+                assembly_code.push_str("\n");
+                assembly_code.push_str(&whilebody);
             }
         }
     }
-    // println!("{:?}", args);
-    // for line in lines.collect::<Vec<_>>() {
-    //     if line == "entry:" {
-    //         lines.next();
-    //         println!("{:?}", lines);
-    //     }
-    // }
-
-    // assembly_code.push_str(&format!("\n.section .note.GNU-stack,{},@progbits", ""));
     assembly_code.push_str(".section .note.GNU-stack,\"\",@progbits\n");
     assembly_code
 }
 
-// fn gen_x86_stmts() {
-//     d
-// }
+fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines: &mut Peekable<impl Iterator<Item = &'a str>>, rsp: usize) -> String {
+// fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines: &mut Peekable<impl Iterator<Item = &'a str>>, assembly_code: &mut String) {
+// fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines: &mut Peekable<impl Iterator<Item = &'a str>>, assembly_code: &mut String) {
+    let mut stmts_assm = String::new();
+    let tmp = inner_line.replace(",", "");
+    let mut tokens: Vec<_> = tmp.split_whitespace().collect();
+    if inner_line.starts_with("\t%") {
+        if inner_line.contains("= load") {
+            stmts_assm.push_str(&format!("\tmovq {}, %rbx\n", args[tokens[5]]));
+            args.insert(tokens[0].to_string(), "%rbx".to_string());
+            if let Some(operand) = lines.peek() {
+                if operand.starts_with("\t%") && operand.contains("= load") {
+                    tokens = operand.split_whitespace().collect();
+                    stmts_assm.push_str(&format!("\tmovq {}, %rax\n", args[tokens[5]]));
+                    stmts_assm.push_str("\tpushq %rax\n");
+                    args.insert(tokens[0].to_string(), "%rax".to_string());
+                    lines.next();
+                }
+            }
+            stmts_assm.push_str("\tpushq %rbx\n");
+        }
+        else if inner_line.contains("= mul") || inner_line.contains("= add") {
+            let mut src = String::new();
+            let mut dest = String::new();
+            let inst = format!("{}q", tokens[2]);
+            if tokens[4].contains("%") {
+                src = "%r10".to_string();
+                stmts_assm.push_str(&format!("\tpopq {}\n", src));
+                if tokens[5].contains("%") {
+                    dest = "%r11".to_string();
+                    stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                }
+                else {
+                    let tmp = src;
+                    src = format!("${}", tokens[5]);
+                    dest = tmp;
+                }
+            }
+            else {
+                src = format!("${}", tokens[4]);
+                if tokens[5].contains("%") {
+                    dest = "%r11".to_string();
+                    stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                }
+                else {
+                    dest = "%r11".to_string();
+                    stmts_assm.push_str(&format!("\tmovq {}, {}\n", src, dest));
+                    src = format!("${}", tokens[5]);
+                    // stmts_assm.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
+                    // stmts_assm.push_str(&format!("\tpushq {}\n", dest))
+                    // dest = format!("${}", tokens[5]);
+                }
+            }
+            stmts_assm.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+            stmts_assm.push_str(&format!("\tpushq {}\n", dest));
+            args.insert(tokens[0].to_string(), dest.to_string());
+        }
+        // else if inner_line.contains("= add") {
+        //     stmts_assm.push_str(&format!("\taddq {}, {}\n", ,args[tokens[5]]));
+        // }
+        else if inner_line.contains("= icmp") {
+            let mut lhs = String::new();
+            let mut rhs = String::new();
+            if tokens[5].contains("%") {
+                if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
+                    stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[5]].clone()));
+                }
+                lhs = args[tokens[5]].clone();
+            }
+            else {
+                lhs = format!("${}",tokens[5].to_string());
+                args.insert(tokens[5].to_string(), lhs.to_string());   
+            }
+            if tokens[6].contains("%") {
+                if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
+                    stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
+                }
+                rhs = args[tokens[6]].clone();
+            }
+            else {
+                rhs = format!("${}",tokens[6].to_string());
+            }
+            stmts_assm.push_str(&format!("\tcmpq {}, {}\n", lhs, rhs));
+            match tokens[3] {
+                "ult" => args.insert(tokens[0].to_string(), "jb".to_string()),
+                "ule" => args.insert(tokens[0].to_string(), "jbe".to_string()),
+                "ugt" => args.insert(tokens[0].to_string(), "ja".to_string()),
+                "uge" => args.insert(tokens[0].to_string(), "jae".to_string()),
+                "eq" => args.insert(tokens[0].to_string(), "je".to_string()),
+                "ne" => args.insert(tokens[0].to_string(), "jne".to_string()),
+                _ => args.insert(tokens[0].to_string(), "je".to_string()),
+            };
+        }
+    }
+    else if inner_line.starts_with("\tstore") {
+        if tokens[2].contains("%") {
+            if tokens[2].contains("t") {
+                stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[2]].to_string()));
+            }
+        }
+        else {
+            args.insert(tokens[2].to_string(), format!("${}", tokens[2]));
+        }
+        stmts_assm.push_str(&format!("\tmovq {}, {}\n", args[tokens[2]].to_string(), args[tokens[4]]));
+    }
+    else if inner_line.starts_with("\tbr") {
+        if inner_line.contains("i1") {
+            if tokens[2].contains("%") {
+                let mut label = tokens[4].replace(".", "");
+                label = label.replace("%", "");
+                stmts_assm.push_str(&format!("\t{} {}\n", args[tokens[2]], label));
+            }
+            else {
+                if tokens[2].parse().unwrap() {
+                    let mut label = tokens[4].replace(".", "");
+                    label = label.replace("%", "");
+                    stmts_assm.push_str(&format!("\tjmp {}\n", label));
+                }
+                else {
+                    let mut label = tokens[6].replace(".", "");
+                    label = label.replace("%", "");
+                    stmts_assm.push_str(&format!("\tjmp {}\n", label));
+                }
+            }
+        }
+        else {
+            let mut label = tokens[2].replace(".", "");
+            label = label.replace("%", "");
+            stmts_assm.push_str(&format!("\tjmp {}\n", label));
+        }
+    }
+    else if inner_line.starts_with("\tret") {
+        stmts_assm.push_str(&format!("\tmovq {}, %rax\n", args[tokens[2]]));
+        stmts_assm.push_str(&format!("\n\taddq ${}, %rsp\n\tpopq %rbx\n\tpopq %rbp\n\tret\n", rsp));
+    }
+    stmts_assm
+}
