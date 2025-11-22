@@ -132,7 +132,13 @@ fn get_ir(root: &DAGNode, temp_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &
             let (_, var_dag) = var;
             let (_, val_dag) = val;
             let var_ir = &get_ir(&*var_dag.clone(), temp_nums, cur_valnum, func_type.clone(), llvm_ir);
-            let val_ir = &get_ir(&*val_dag.clone(), temp_nums, cur_valnum, func_type.clone(), llvm_ir);
+            let mut val_ir = get_ir(&*val_dag.clone(), temp_nums, cur_valnum, func_type.clone(), llvm_ir);
+            if is_reg(&val_ir) {
+                *cur_valnum += 1;
+                let val_num = *cur_valnum;
+                llvm_ir.push_str(&format!("\t%t{} = load {}, ptr {}.alloc\n", val_num, func_type.clone().unwrap_or_else(|| "i64".to_string()), val_ir));
+                val_ir = format!("%t{}", val_num);
+            }
             llvm_ir.push_str(&format!("\tstore {} {}, ptr {}.alloc\n", func_type.clone().unwrap_or_else(|| "i64".to_string()), val_ir, var_ir));
             "\n".to_string()
         }
