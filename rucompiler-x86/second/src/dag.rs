@@ -38,6 +38,7 @@ pub enum DAGNode {
         lhs: (usize, Rc<DAGNode>),
         rhs: (usize, Rc<DAGNode>),
     },
+    Empty,
 }
 
 fn get_valnum(node: DAGNode, value_nums: &mut HashMap<DAGNode, usize>, cur_valnum: &mut usize, dag_nodes: &mut HashMap<usize, Rc<DAGNode>>) -> (usize, Rc<DAGNode>) {
@@ -143,6 +144,9 @@ pub fn dag_from_ast(root: &ASTNode, value_nums: &mut HashMap<DAGNode, usize>, cu
                 lhs: lhs_dag, 
                 rhs: rhs_dag,
             }, value_nums, cur_valnum, dag_nodes)
+        }
+        ASTNode::Empty => {
+            get_valnum(DAGNode::Empty, value_nums, cur_valnum, dag_nodes)
         }
     }
 }

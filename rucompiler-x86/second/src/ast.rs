@@ -38,6 +38,7 @@ pub enum ASTNode {
         lhs: Box<ASTNode>,
         rhs: Box<ASTNode>,
     },
+    Empty,
 }
 
 pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
@@ -143,8 +144,13 @@ pub fn gen_ast(parse_node: &ParseNode) -> Result<ASTNode, String> {
             }
         }
         "STMTS" => {
-            let mut stmt_node = gen_ast(&parse_node.children[0].clone().unwrap())?;
-            gen_stmts(&parse_node.children[1].clone().unwrap(), stmt_node)
+            if parse_node.children.len() > 1 {
+                let mut stmt_node = gen_ast(&parse_node.children[0].clone().unwrap())?;
+                gen_stmts(&parse_node.children[1].clone().unwrap(), stmt_node)
+            }
+            else {
+                Ok(ASTNode::Empty)
+            }
             // let stmts_node = gen_ast(&parse_node.children[1].clone().unwrap())?;
             // Ok(ASTNode::Stmts {
             //     stmt: Box::new(stmt_node),
