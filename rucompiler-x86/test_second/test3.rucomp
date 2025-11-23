@@ -1,0 +1,9 @@
+args a;
+int x;
+x = 0;
+if false then {
+    x = x + 1;
+} else {
+    x = x + 2;
+}
+return x;

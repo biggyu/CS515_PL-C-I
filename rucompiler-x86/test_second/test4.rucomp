@@ -1,0 +1,11 @@
+args a b;
+int c, temp;
+if a < b then { 
+    c = 0;
+} else { 
+    c = 0;
+    temp = a;
+    a = b;
+    b = temp;
+} 
+return c;

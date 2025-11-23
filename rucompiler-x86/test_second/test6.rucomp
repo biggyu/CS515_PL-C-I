@@ -1,0 +1,13 @@
+args a b c d e f;
+int x, y;
+x = 0;
+y = 0;
+while a < b then {
+    if c == d then {
+        x = x + 1;
+    } else {
+        y = y + 2;
+    }
+    a = a + 1;
+}
+return x;

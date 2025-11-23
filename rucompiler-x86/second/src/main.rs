@@ -128,16 +128,16 @@ fn main() -> io::Result<()> {
             //LLVM IR
             let mut temp_nums: HashMap<DAGNode, usize> = HashMap::new();
             let llvm_ir = gen_llvm_ir(&*ast_dag.clone(), &mut temp_nums, &dag_nodes, Some("i64".to_string()), Some("foo".to_string()));
-            println!("{}", llvm_ir);
+            // println!("{}", llvm_ir);
             // let output_file: Vec<_> = input_file.split(".").collect();
             // fs::write(format!("{}.ll", output_file[0]), &llvm_ir)?;
 
             //x86-64 assembly code
             let x86_assm = gen_x86(&llvm_ir);
-            println!("{}", x86_assm);
+            // println!("{}", x86_assm);
 
-            // let output_file: Vec<_> = input_file.split(".").collect();
-            // fs::write(format!("{}.s", output_file[0]), &x86_assm)?;
+            let output_file: Vec<_> = input_file.split(".").collect();
+            fs::write(format!("{}.s", output_file[0]), &x86_assm)?;
         }
         else {
             println!("{:?}", ast);

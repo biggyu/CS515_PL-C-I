@@ -1,0 +1,15 @@
+args a;
+int x;
+x = 5;
+if x < 10 then {
+    if a > x then { 
+        x = a; 
+    } 
+    else { 
+        x = x + 1; 
+    }
+} 
+else {
+    x = 0;
+}
+return x;

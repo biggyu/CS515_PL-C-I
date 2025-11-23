@@ -1,0 +1,10 @@
+args var;
+int x;
+x = 10;
+if false then {
+}
+else {
+}
+while false then {
+}
+return x;

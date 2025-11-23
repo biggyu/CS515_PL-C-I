@@ -1,0 +1,26 @@
+args a x;
+int b, c;
+b = 0;
+c = 1;
+b = a * x + c * b;
+c = 2 * 3 + 1;
+x = b * (c + 2) + 2 * a;
+if a < 4 then {
+    b = 4;
+    c = b * c;
+}
+else {
+    b = 6;
+    c = b + 2;
+}
+if false then {
+    b = 8;
+}
+else {
+    b = 10;
+}
+while 20 > a then {
+    a = a + 4;
+    b = b + 1;
+}
+return c;
