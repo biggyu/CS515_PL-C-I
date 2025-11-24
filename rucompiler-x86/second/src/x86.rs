@@ -192,10 +192,55 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
             }
             stmts_assm.push_str("\tpushq %rbx\n");
         }
-        else if inner_line.contains("= mul") || inner_line.contains("= add") {
+        else if inner_line.contains("= mul") {
+            let mut src = String::new();
+            // let mut dest = String::new();
+            let mut dest = "%r10".to_string();
+            // let mut inst = format!("{}q", tokens[2]);
+            if tokens[4].contains("%") {
+                // src = "%r10".to_string();
+                stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                if tokens[5].contains("%") {
+                    // dest = "%r11".to_string();
+                    // stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                    stmts_assm.push_str("\tpopq %rax\n");
+                    stmts_assm.push_str(&format!("\tmulq {}\n", dest));
+                }
+                else {
+                    // let tmp = src;
+                    // src = format!("${}", tokens[5]);
+                    // dest = src;
+                    stmts_assm.push_str(&format!("\timulq ${}, {}, {}\n", tokens[5], dest, dest));
+                }
+                // stmts_assm.push_str("\tpushq {}\n", dest);
+            }
+            else {
+                src = format!("${}", tokens[4]);
+                // dest = "%r11".to_string();
+                if tokens[5].contains("%") {
+                    // dest = "%r11".to_string();
+                    // stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                    stmts_assm.push_str(&format!("\tpopq {}\n", dest));
+                    // stmts_assm.push_str("\timulq {}, {}, {}", src, dest, dest);
+                }
+                else {
+                    // dest = "%r11".to_string();
+                    stmts_assm.push_str(&format!("\tmovq {}, {}\n", src, dest));
+                    src = format!("${}", tokens[5]);
+                    // stmts_assm.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
+                    // stmts_assm.push_str(&format!("\tpushq {}\n", dest))
+                    // dest = format!("${}", tokens[5]);
+                }
+                stmts_assm.push_str(&format!("\timulq {}, {}, {}\n", src, dest, dest));
+                // stmts_assm.push_str("\tpushq {}", dest);
+            }
+            // stmts_assm.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+            stmts_assm.push_str(&format!("\tpushq {}\n", dest));
+            args.insert(tokens[0].to_string(), dest.to_string());
+        }
+        else if inner_line.contains("= add") {
             let mut src = String::new();
             let mut dest = String::new();
-            let mut inst = format!("{}q", tokens[2]);
             if tokens[4].contains("%") {
                 src = "%r10".to_string();
                 stmts_assm.push_str(&format!("\tpopq {}\n", src));
@@ -204,37 +249,26 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
                     stmts_assm.push_str(&format!("\tpopq {}\n", dest));
                 }
                 else {
-                    let tmp = src;
+                    dest = src;
                     src = format!("${}", tokens[5]);
-                    dest = tmp;
-                    if inst == "mulq" {
-                        inst = "imulq".to_string();
-                    }
                 }
             }
             else {
                 src = format!("${}", tokens[4]);
+                dest = "%r11".to_string();
                 if tokens[5].contains("%") {
-                    dest = "%r11".to_string();
                     stmts_assm.push_str(&format!("\tpopq {}\n", dest));
                 }
                 else {
-                    dest = "%r11".to_string();
+                    // dest = "%r11".to_string();
                     stmts_assm.push_str(&format!("\tmovq {}, {}\n", src, dest));
                     src = format!("${}", tokens[5]);
-                    inst = "imulq".to_string();
-                    // stmts_assm.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
-                    // stmts_assm.push_str(&format!("\tpushq {}\n", dest))
-                    // dest = format!("${}", tokens[5]);
                 }
             }
-            stmts_assm.push_str(&format!("\t{} {}, {}\n", inst, src, dest));
+            stmts_assm.push_str(&format!("\taddq {}, {}\n", src, dest));
             stmts_assm.push_str(&format!("\tpushq {}\n", dest));
             args.insert(tokens[0].to_string(), dest.to_string());
         }
-        // else if inner_line.contains("= add") {
-        //     stmts_assm.push_str(&format!("\taddq {}, {}\n", ,args[tokens[5]]));
-        // }
         else if inner_line.contains("= icmp") {
             let mut lhs = String::new();
             let mut rhs = String::new();
