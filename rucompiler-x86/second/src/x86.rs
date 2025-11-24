@@ -195,7 +195,7 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
         else if inner_line.contains("= mul") || inner_line.contains("= add") {
             let mut src = String::new();
             let mut dest = String::new();
-            let inst = format!("{}q", tokens[2]);
+            let mut inst = format!("{}q", tokens[2]);
             if tokens[4].contains("%") {
                 src = "%r10".to_string();
                 stmts_assm.push_str(&format!("\tpopq {}\n", src));
@@ -207,6 +207,9 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
                     let tmp = src;
                     src = format!("${}", tokens[5]);
                     dest = tmp;
+                    if inst == "mulq" {
+                        inst = "imulq".to_string();
+                    }
                 }
             }
             else {
@@ -219,6 +222,7 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
                     dest = "%r11".to_string();
                     stmts_assm.push_str(&format!("\tmovq {}, {}\n", src, dest));
                     src = format!("${}", tokens[5]);
+                    inst = "imulq".to_string();
                     // stmts_assm.push_str(&format!("\t{} ${}, {}\n", inst, tokens[5], dest));
                     // stmts_assm.push_str(&format!("\tpushq {}\n", dest))
                     // dest = format!("${}", tokens[5]);
