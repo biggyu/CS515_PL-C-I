@@ -242,21 +242,44 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
                 if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
                     stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[5]].clone()));
                 }
-                lhs = args[tokens[5]].clone();
+                rhs = args[tokens[5]].clone();
+                if tokens[6].contains("%") {
+                    if args[tokens[6]] == "%rbx" || args[tokens[6]] == "%rax" {
+                        stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
+                    }
+                    lhs = args[tokens[6]].clone();
+                }
+                else {
+                    lhs = format!("${}", tokens[6].clone());
+                    args.insert(tokens[6].to_string(), lhs.to_string());
+                }
             }
             else {
                 lhs = format!("${}",tokens[5].to_string());
-                args.insert(tokens[5].to_string(), lhs.to_string());   
-            }
-            if tokens[6].contains("%") {
-                if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
-                    stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
+                if tokens[6].contains("%") {
+                    args.insert(tokens[5].to_string(), lhs.to_string());   
+                    if args[tokens[6]] == "%rbx" || args[tokens[6]] == "%rax" {
+                        stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
+                        rhs = args[tokens[6]].clone();
+                    }
                 }
-                rhs = args[tokens[6]].clone();
+                else {
+                    stmts_assm.push_str(&format!("\tmovq {}, %rax\n", tokens[6].to_string()));
+                    // lhs = format!("${}", tokens[6].to_string());
+                    rhs = "%rax".to_string();
+                }
             }
-            else {
-                rhs = format!("${}",tokens[6].to_string());
-            }
+            // if tokens[6].contains("%") {
+            //     if args[tokens[5]] == "%rbx" || args[tokens[5]] == "%rax" {
+            //         stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[6]].clone()));
+            //     }
+            //     rhs = args[tokens[6]].clone();
+            // }
+            // else {
+            //     rhs = "%r10".to_string();
+            //     stmts_assm.push_str(&format!("\tmovq ${}, {}\n", tokens[6], rhs));
+            //     // rhs = format!("${}",tokens[6].to_string());
+            // }
             stmts_assm.push_str(&format!("\tcmpq {}, {}\n", lhs, rhs));
             match tokens[3] {
                 "ult" => args.insert(tokens[0].to_string(), "jb".to_string()),
