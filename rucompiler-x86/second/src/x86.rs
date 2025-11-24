@@ -350,11 +350,11 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
                     label = label.replace("%", "");
                     stmts_assm.push_str(&format!("\tjmp {}\n", label));
                 }
-                else {
-                    let mut label = tokens[6].replace(".", "");
-                    label = label.replace("%", "");
-                    stmts_assm.push_str(&format!("\tjmp {}\n", label));
-                }
+                // else {
+                //     let mut label = tokens[6].replace(".", "");
+                //     label = label.replace("%", "");
+                //     stmts_assm.push_str(&format!("\tjmp {}\n", label));
+                // }
             }
         }
         else {
