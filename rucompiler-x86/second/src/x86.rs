@@ -307,6 +307,9 @@ fn gen_x86_stmts<'a>(args: &mut HashMap<String, String>, inner_line: &str, lines
         }
     }
     else if inner_line.starts_with("\tret") {
+        if args[tokens[2]] == "%rbx" || args[tokens[2]] == "%rax" {
+            stmts_assm.push_str(&format!("\tpopq {}\n", args[tokens[2]]));
+        }
         stmts_assm.push_str(&format!("\tmovq {}, %rax\n", args[tokens[2]]));
         stmts_assm.push_str(&format!("\n\taddq ${}, %rsp\n\tpopq %rbx\n\tpopq %rbp\n\tret\n", rsp));
     }
