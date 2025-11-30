@@ -9,7 +9,6 @@ foo:
 	subq $16, %rsp
 	movq %rdi, -8(%rbp)
 	movq $0, -16(%rbp)
-	jmp if0else
 
 	movq -16(%rbp), %rbx
 	pushq %rbx
@@ -28,10 +27,12 @@ if0then:
 	pushq %r10
 	popq %r10
 	movq %r10, -16(%rbp)
+	jmp if0end
 
 if0end:
 	movq -16(%rbp), %rbx
 	pushq %rbx
+	popq %rbx
 	movq %rbx, %rax
 
 	addq $16, %rsp

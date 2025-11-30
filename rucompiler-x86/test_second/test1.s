@@ -11,6 +11,7 @@ foo:
 	movq $42, -16(%rbp)
 	movq -16(%rbp), %rbx
 	pushq %rbx
+	popq %rbx
 	movq %rbx, %rax
 
 	addq $16, %rsp

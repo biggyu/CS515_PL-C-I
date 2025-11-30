@@ -13,28 +13,33 @@ foo:
 	movq $2, -32(%rbp)
 	movq $3, -40(%rbp)
 	movq -8(%rbp), %rbx
-	movq -16(%rbp), %rax
-	pushq %rax
 	pushq %rbx
-	popq %rbx
+	movq -16(%rbp), %rbx
+	pushq %rbx
 	popq %rax
-	cmpq %rbx, %rax
+	popq %rbx
+	cmpq %rax, %rbx
 	jb if3then
+
+	jmp while13cond
+
+if3then:
+	jmp while4cond
 
 while4cond:
 	movq -24(%rbp), %rbx
 	pushq %rbx
-	popq %rbx
-	cmpq %rbx, $5
+	popq %rax
+	movq $5, %rbx
+	cmpq %rbx, %rax
 	jb while4body
 
 	jmp if3end
-
 while4body:
 	movq -24(%rbp), %rbx
 	pushq %rbx
 	popq %r10
-	mulq $2, %r10
+	imulq $2, %r10, %r10
 	pushq %r10
 	movq -32(%rbp), %rbx
 	pushq %rbx
@@ -56,12 +61,12 @@ while4body:
 while13cond:
 	movq -32(%rbp), %rbx
 	pushq %rbx
-	popq %rbx
-	cmpq %rbx, $10
+	popq %rax
+	movq $10, %rbx
+	cmpq %rbx, %rax
 	jb while13body
 
 	jmp if3end
-
 while13body:
 	movq -24(%rbp), %rbx
 	pushq %rbx
@@ -70,10 +75,10 @@ while13body:
 	pushq %r10
 	movq -32(%rbp), %rbx
 	pushq %rbx
+	popq %rax
 	popq %r10
-	popq %r11
-	mulq %r10, %r11
-	pushq %r11
+	mulq %r10
+	pushq %rax
 	movq -40(%rbp), %rbx
 	pushq %rbx
 	popq %r10
@@ -91,10 +96,6 @@ while13body:
 	movq %r10, -32(%rbp)
 	jmp while13cond
 
-	jmp while13cond
-
-if3then:
-
 if3end:
 	movq -32(%rbp), %rbx
 	pushq %rbx
@@ -103,10 +104,10 @@ if3end:
 	pushq %r10
 	movq -40(%rbp), %rbx
 	pushq %rbx
+	popq %rax
 	popq %r10
-	popq %r11
-	mulq %r10, %r11
-	pushq %r11
+	mulq %r10
+	pushq %rax
 	movq -24(%rbp), %rbx
 	pushq %rbx
 	popq %r10
@@ -117,6 +118,7 @@ if3end:
 	movq %r11, -24(%rbp)
 	movq -24(%rbp), %rbx
 	pushq %rbx
+	popq %rbx
 	movq %rbx, %rax
 
 	addq $40, %rsp

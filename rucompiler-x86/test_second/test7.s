@@ -11,22 +11,28 @@ foo:
 	movq $0, -16(%rbp)
 	movq -8(%rbp), %rbx
 	pushq %rbx
-	popq %rbx
-	cmpq %rbx, $0
+	popq %rax
+	movq $0, %rbx
+	cmpq %rbx, %rax
 	ja if2then
+
+	movq $100, -16(%rbp)
+	jmp if2end
+
+if2then:
+	jmp while3cond
 
 while3cond:
 	movq -16(%rbp), %rbx
-	movq -8(%rbp), %rax
-	pushq %rax
 	pushq %rbx
-	popq %rbx
+	movq -8(%rbp), %rbx
+	pushq %rbx
 	popq %rax
-	cmpq %rbx, %rax
+	popq %rbx
+	cmpq %rax, %rbx
 	jb while3body
 
 	jmp if2end
-
 while3body:
 	movq -16(%rbp), %rbx
 	pushq %rbx
@@ -37,14 +43,10 @@ while3body:
 	movq %r10, -16(%rbp)
 	jmp while3cond
 
-	movq $100, -16(%rbp)
-	jmp if2end
-
-if2then:
-
 if2end:
 	movq -16(%rbp), %rbx
 	pushq %rbx
+	popq %rbx
 	movq %rbx, %rax
 
 	addq $16, %rsp

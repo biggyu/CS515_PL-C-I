@@ -17,6 +17,35 @@ foo:
 	movq $0, -64(%rbp)
 	jmp while0cond
 
+while0cond:
+	movq -8(%rbp), %rbx
+	pushq %rbx
+	movq -16(%rbp), %rbx
+	pushq %rbx
+	popq %rax
+	popq %rbx
+	cmpq %rax, %rbx
+	jb while0body
+
+	movq -56(%rbp), %rbx
+	pushq %rbx
+	popq %rbx
+	movq %rbx, %rax
+
+	addq $64, %rsp
+	popq %rbx
+	popq %rbp
+	ret
+while0body:
+	movq -24(%rbp), %rbx
+	pushq %rbx
+	movq -32(%rbp), %rbx
+	pushq %rbx
+	popq %rax
+	popq %rbx
+	cmpq %rax, %rbx
+	je if7then
+
 	movq -64(%rbp), %rbx
 	pushq %rbx
 	popq %r10
@@ -34,6 +63,7 @@ if7then:
 	pushq %r10
 	popq %r10
 	movq %r10, -56(%rbp)
+	jmp if7end
 
 if7end:
 	movq -8(%rbp), %rbx
@@ -44,33 +74,4 @@ if7end:
 	popq %r10
 	movq %r10, -8(%rbp)
 	jmp while0cond
-
-while0cond:
-	movq -8(%rbp), %rbx
-	movq -16(%rbp), %rax
-	pushq %rax
-	pushq %rbx
-	popq %rbx
-	popq %rax
-	cmpq %rbx, %rax
-	jb while0body
-
-	movq -56(%rbp), %rbx
-	pushq %rbx
-	movq %rbx, %rax
-
-	addq $64, %rsp
-	popq %rbx
-	popq %rbp
-	ret
-
-while0body:
-	movq -24(%rbp), %rbx
-	movq -32(%rbp), %rax
-	pushq %rax
-	pushq %rbx
-	popq %rbx
-	popq %rax
-	cmpq %rbx, %rax
-	je if7then
 .section .note.GNU-stack,"",@progbits

@@ -11,9 +11,23 @@ foo:
 	movq $5, -16(%rbp)
 	movq -16(%rbp), %rbx
 	pushq %rbx
-	popq %rbx
-	cmpq %rbx, $10
+	popq %rax
+	movq $10, %rbx
+	cmpq %rbx, %rax
 	jb if2then
+
+	movq $0, -16(%rbp)
+	jmp if2end
+
+if2then:
+	movq -8(%rbp), %rbx
+	pushq %rbx
+	movq -16(%rbp), %rbx
+	pushq %rbx
+	popq %rax
+	popq %rbx
+	cmpq %rax, %rbx
+	ja if6then
 
 	movq -16(%rbp), %rbx
 	pushq %rbx
@@ -29,22 +43,15 @@ if6then:
 	pushq %rbx
 	popq %rbx
 	movq %rbx, -16(%rbp)
+	jmp if6end
 
 if6end:
 	jmp if2end
 
-	movq $0, -16(%rbp)
-	jmp if2end
-
-if6then:
-	movq -8(%rbp), %rbx
-	pushq %rbx
-	popq %rbx
-	movq %rbx, -16(%rbp)
-
 if2end:
 	movq -16(%rbp), %rbx
 	pushq %rbx
+	popq %rbx
 	movq %rbx, %rax
 
 	addq $16, %rsp
