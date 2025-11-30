@@ -28,8 +28,8 @@ pub fn gen_x86(llvm_ir: &String) -> String {
     }
     let mut rsp: usize = 0;
     let mut buffer = None;
-    let mut ifthen = String::new();
-    let mut ifelse = String::new();
+    // let mut ifthen = String::new();
+    // let mut ifelse = String::new();
     let mut whilecond = String::new();
     let mut whilebody = String::new();
     while let Some(line) = lines.next() {
@@ -71,43 +71,63 @@ pub fn gen_x86(llvm_ir: &String) -> String {
         }
         else if line.starts_with("if") {
             if line.ends_with("then:") {
-                ifthen = String::new();
-                let mut label = line.replace(".", "");
-                label = label.replace("%", "");
-                ifthen.push_str(&format!("{}\n", label));
-                // assembly_code.push_str(&format!("{}\n", label));
-                while let Some(inner_line) = lines.next() {
-                // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
-                    if inner_line.starts_with("\tbr") {
-                        buffer = Some(inner_line);
-                        break;
+                let mut labels: Vec<_> = line.split(".").collect();
+                let mut lookahead = lines.clone();
+                // println!("labels: {:?}", labels);
+                while let Some(line_ahead) = lookahead.next() {
+                    if line_ahead.ends_with("else:") {
+                        let mut tmp_labels: Vec<_> = line_ahead.split(".").collect();
+                        // println!("{:?}", tmp_labels);
+                        if labels[0] == tmp_labels[0] {
+                            assembly_code.push_str("\n");
+                            while let Some(ll_ahead) = lookahead.next() {
+                                if !ll_ahead.starts_with("\t") {
+                                    buffer = Some(ll_ahead);
+                                    break;
+                                }
+                                assembly_code.push_str(&gen_x86_stmts(&mut args, ll_ahead, &mut lines, rsp));
+                            }
+                            break;
+                        }
                     }
-                    ifthen.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
                 }
-            }
-            if line.ends_with("else:") {
+                // ifthen = String::new();
                 // let mut label = line.replace(".", "");
                 // label = label.replace("%", "");
-                // assembly_code.push_str(&format!("{}\n", label));
-                ifelse = String::new();
+                // ifthen.push_str(&format!("{}\n", label));
+                assembly_code.push_str(&format!("\n{}\n", labels.join("").replace("%", "")));
                 while let Some(inner_line) = lines.next() {
                 // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
                     if !inner_line.starts_with("\t") {
                         buffer = Some(inner_line);
                         break;
                     }
-                    ifelse.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+                    assembly_code.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
                 }
             }
+            // if line.ends_with("else:") {
+            //     // let mut label = line.replace(".", "");
+            //     // label = label.replace("%", "");
+            //     // assembly_code.push_str(&format!("{}\n", label));
+            //     ifelse = String::new();
+            //     while let Some(inner_line) = lines.next() {
+            //     // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
+            //         if !inner_line.starts_with("\t") {
+            //             buffer = Some(inner_line);
+            //             break;
+            //         }
+            //         ifelse.push_str(&gen_x86_stmts(&mut args, inner_line, &mut lines, rsp));
+            //     }
+            // }
             if line.ends_with("end:") {
-                assembly_code.push_str("\n");
-                assembly_code.push_str(&ifelse);
-                assembly_code.push_str("\n");
-                assembly_code.push_str(&ifthen);
-                assembly_code.push_str("\n");
+                // assembly_code.push_str("\n");
+                // assembly_code.push_str(&ifelse);
+                // assembly_code.push_str("\n");
+                // assembly_code.push_str(&ifthen);
+                // assembly_code.push_str("\n");
                 let mut label = line.replace(".", "");
                 label = label.replace("%", "");
-                assembly_code.push_str(&format!("{}\n", label));
+                assembly_code.push_str(&format!("\n{}\n", label));
                 while let Some(inner_line) = lines.next() {
                 // while let Some(inner_line) = buffer.take().or_else(|| lines.next()) {
                     if !inner_line.starts_with("\t") {
